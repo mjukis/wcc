@@ -130,10 +130,8 @@ def writeDateTime(win):
     win.refresh()
 
 def write_rcontacts(win):
-    win.move(2,17)
-    win.addstr(get_rcontacts("total"))
-    win.move(3,17)
-    win.addstr(get_rcontacts("today"))
+    win.addstr(2,17,get_rcontacts("total"))
+    win.addstr(3,17,get_rcontacts("today"))
     win.refresh()
 
 def check_messages(win):
@@ -155,8 +153,7 @@ def check_messages(win):
             db.close()
     msg_checktime = time.time()
     if message > 0:
-        win.move(23,1)
-        win.addstr("*** INCOMING MESSAGE***", curses.A_BLINK)
+        win.addstr(23,1,"*** INCOMING MESSAGE***", curses.A_BLINK)
     win.refresh()
 
 def check_dupe(win,dupe):
@@ -268,20 +265,13 @@ def minimenu(win):
     subwin.erase()
 #    subwin.border("|","|","^","_","'","'",".",",")
     subwin.refresh()
-    subwin.move(1,0)
-    subwin.addstr("---Menu---------------------")
-    subwin.move(3,2)
-    subwin.addstr("1) Radio Log")
-    subwin.move(4,2)
-    subwin.addstr("2) Radiogram Input")
-    subwin.move(5,2)
-    subwin.addstr("3) Postal Log")
-    subwin.move(6,2)
-    subwin.addstr("4) Messaging")
-    subwin.move(7,2)
-    subwin.addstr("5) Operator")
-    subwin.move(8,2)
-    subwin.addstr("6) Main Menu")
+    subwin.addstr(1,0,"---Menu---------------------")
+    subwin.addstr(3,2,"1) Radio Log")
+    subwin.addstr(4,2,"2) Radiogram Input")
+    subwin.addstr(5,2,"3) Postal Log")
+    subwin.addstr(6,2,"4) Messaging")
+    subwin.addstr(7,2,"5) Operator")
+    subwin.addstr(8,2,"6) Main Menu")
     subwin.refresh()
     while 1:
         inch = subwin.getch()
@@ -306,28 +296,19 @@ def init_window(win):
     bottomstring = operator + " @ " + machine
     bottomfillstring = (78 - len(bottomstring)) * " "
     topfillstring = (78 - len(topstring)) * " "
-    win.move(0,0)
-    win.addstr(" " + topstring + topfillstring, curses.A_REVERSE)
-    win.move(23,0)
-    win.addstr(bottomfillstring + bottomstring + " ", curses.A_REVERSE)
+    win.addstr(0,0," " + topstring + topfillstring, curses.A_REVERSE)
+    win.addstr(23,0,bottomfillstring + bottomstring + " ", curses.A_REVERSE)
 
 
 def draw_menu_window(win):
     init_window(win)
-    win.move(2,1)
-    win.addstr("Main Menu",curses.A_BOLD)
-    win.move(4,1)
-    win.addstr("1) Radio Communication Log")
-    win.move(6,1)
-    win.addstr("2) Radio Telegram Input")
-    win.move(8,1)
-    win.addstr("3) Postal Log")
-    win.move(10,1)
-    win.addstr("4) Messaging")
-    win.move(12,1)
-    win.addstr("5) Change Operator")
-    win.move(14,1)
-    win.addstr("6) Exit")
+    win.addstr(2,1,"Main Menu",curses.A_BOLD)
+    win.addstr(4,1,"1) Radio Communication Log")
+    win.addstr(6,1,"2) Radio Telegram Input")
+    win.addstr(8,1,"3) Postal Log")
+    win.addstr(10,1,"4) Messaging")
+    win.addstr(12,1,"5) Change Operator")
+    win.addstr(14,1,"6) Exit")
     writeDateTime(win)
     win.refresh()    
     menuloop(win)
@@ -337,26 +318,20 @@ def draw_message_window(win):
     init_window(win)
     message = 0
     vline = 0
-    win.move(2,1)
-    win.addstr("Messaging", curses.A_BOLD)
-    win.move(2,61)
-    win.addstr("Who's Online?", curses.A_BOLD)
+    win.addstr(2,1,"Messaging", curses.A_BOLD)
+    win.addstr(2,61,"Who's Online?", curses.A_BOLD)
     while vline < 18:
         win.move(vline + 1,60)
         win.addstr("|")
         vline = vline + 1
-    win.move(19,0)
     senderstring = operator + " @ " + machine
     inputstring = " Send Message"
     inputfill = " " * (79 - len(inputstring))
-    win.addstr(inputstring + inputfill, curses.A_REVERSE)
-    win.move(20,1)
-    win.addstr("Sending as: " + senderstring)
-    win.move(21,1)
-    win.addstr("Sending to: ")
+    win.addstr(19,0,inputstring + inputfill, curses.A_REVERSE)
+    win.addstr(20,1,"Sending as: " + senderstring)
+    win.addstr(21,1,"Sending to: ")
     win.addstr(" " * 16)
-    win.move(22,1)
-    win.addstr("Message:    ")
+    win.addstr(22,1,"Message:    ")
     emptyinput = " " * 61
     win.addstr(emptyinput)
     writeDateTime(win)
@@ -365,14 +340,10 @@ def draw_message_window(win):
 
 def draw_operator_window(win):
     init_window(win)
-    win.move(2,1)
-    win.addstr("Change Operator on machine " + machine, curses.A_BOLD)
-    win.move(4,1)
-    win.addstr("Current Operator: " + operator)
-    win.move(6,1)
-    win.addstr("Enter new Operator: ")
-    win.move(6,21)
-    win.addstr("                ", curses.A_UNDERLINE)
+    win.addstr(2,1,"Change Operator on machine " + machine, curses.A_BOLD)
+    win.addstr(4,1,"Current Operator: " + operator)
+    win.addstr(6,1,"Enter new Operator: ")
+    win.addstr(6,21,"                ", curses.A_UNDERLINE)
     writeDateTime(win)
     win.refresh()    
     operatorloop(win)
@@ -383,8 +354,7 @@ def get_input(win,posy,posx,length,field):
     i = 0
     output = ""
     emptyinput = " " * length
-    win.move(posx, posy)
-    win.addstr(emptyinput,curses.A_REVERSE)
+    win.addstr(posx, posy, emptyinput,curses.A_REVERSE)
     while 1:
         inch = win.getch()
         if inch != -1:
@@ -394,8 +364,7 @@ def get_input(win,posy,posx,length,field):
                 i = i - 1
                 if i < 1:
                     break
-                win.move(posy,posx + 1)
-                win.addstr(" ",curses.A_REVERSE)
+                win.addstr(posy,posx + 1," ",curses.A_REVERSE)
                 win.move(posy,posx + 1)
                 win.refresh()
                 break
@@ -403,10 +372,8 @@ def get_input(win,posy,posx,length,field):
                 #tab
                 inputstring = "".join(inputlist)
                 output = inputstring.strip(' ')
-                win.move(posy,posx)
-                win.addstr(emptystring,curses.A_REVERSE)
-                win.move(posy,posx)               
-                win.addstr(output,curses.A_REVERSE)
+                win.addstr(posy,posx,emptystring,curses.A_REVERSE)
+                win.addstr(posy,posx,output,curses.A_REVERSE)
                 rlogtemp(output,field)
                 win.refresh()
                 return(-1)
@@ -428,15 +395,13 @@ def operatorloop(win):
                 if i < 1:
                     break
                 i = i - 1
-                win.move(6,(i + 21))
-                win.addstr(" ",curses.A_UNDERLINE)
+                win.addstr(6,(i + 21)," ",curses.A_UNDERLINE)
                 win.move(6,(i + 21))
                 win.refresh()
             if inch == 10:
                 inputstring = "".join(inputlist)
                 output = inputstring.strip(' ')
-                win.move(8,1)
-                win.addstr(inputstring)
+                win.addstr(8,1,inputstring)
                 win.refresh()
                 operator = output
                 break
@@ -446,8 +411,7 @@ def operatorloop(win):
                 pass
             else:
                 if inch < 128 and inch > 31:
-                    win.move(6,(i + 21))
-                    win.addstr(instr.upper())
+                    win.addstr(6,(i + 21),instr.upper())
                     i = i + 1
                     inputlist[i] = "%s" % instr.upper()
                     win.refresh()
@@ -474,8 +438,7 @@ def rcptloop(win):
     drawi = 0
     emptyinput = " " * 16
     inputlist = list(emptyinput)
-    win.move(21,starti + i)
-    win.addstr(emptyinput,curses.A_REVERSE)
+    win.addstr(21,starti + i,emptyinput,curses.A_REVERSE)
     while 1:        
         inch = win.getch()
         if inch != -1:
@@ -499,8 +462,7 @@ def rcptloop(win):
                     if i + starti < starti + 2:
                         break
                     i = i - 1
-                    win.move(21,starti + i)
-                    win.addstr(" ",curses.A_REVERSE)
+                    win.addstr(21,starti + i," ",curses.A_REVERSE)
                     inputlist[i + 1] = " "
                     win.move(21,starti + i)
                     win.refresh()
@@ -509,15 +471,13 @@ def rcptloop(win):
                     checkout = inputstring.strip(' ')
                     if len(checkout) > 1:
                         output = inputstring.strip()
-                        win.move(21,starti + 1)
-                        win.addstr(output.upper() + " " * (len(emptyinput) - len(output)))
+                        win.addstr(21,starti + 1,output.upper() + " " * (len(emptyinput) - len(output)))
                         msgloop(win,output.upper())
                         break
                     else:
                         break
                 elif i < 15:
-                    win.move(21,starti + i)
-                    win.addstr(instr.upper())
+                    win.addstr(21,starti + i,instr.upper())
                     i = i + 1
                     inputlist[i] = "%s" % instr
                     win.refresh()
@@ -538,8 +498,7 @@ def msgloop(win,rcpt):
     drawi = 0
     emptyinput = " " * 61
     inputlist = list(emptyinput)
-    win.move(22,starti + i)
-    win.addstr(emptyinput,curses.A_REVERSE)
+    win.addstr(22,starti + i,emptyinput,curses.A_REVERSE)
     while 1:        
         inch = win.getch()
         if inch != -1:
@@ -552,24 +511,21 @@ def msgloop(win,rcpt):
                     if i < 2:
                         break
                     i = i - 1
-                    win.move(22,starti + i)
-                    win.addstr(" ",curses.A_REVERSE)
+                    win.addstr(22,starti + i," ",curses.A_REVERSE)
                     win.move(22,starti + i)
                     win.refresh()
                 elif inch == 10:
                     inputstring = "".join(inputlist)
                     output = inputstring.strip()
                     message_input(rcpt,operator,machine,output)
-                    win.move(22,1)
-                    win.addstr("Message:    ")
+                    win.addstr(22,1,"Message:    ")
                     emptyinput = " " * 61
                     win.addstr(emptyinput,curses.A_UNDERLINE)
                     i = 1
                     win.refresh()
                     break
                 elif i < 60:
-                    win.move(22,starti + i)
-                    win.addstr(instr)
+                    win.addstr(22,starti + i,instr)
                     i = i + 1
                     inputlist[i] = "%s" % instr
                     win.refresh()
@@ -643,8 +599,7 @@ def rlogloop(win):
                     i = i - 1
                     if i < 1:
                         break
-                    win.move(posy,posx + i)
-                    win.addstr(" ",curses.A_REVERSE)
+                    win.addstr(posy,posx + i," ",curses.A_REVERSE)
                     win.move(posy,posx + i)
                     win.refresh()
                 if inch == 96 or inch == 167:
@@ -657,8 +612,7 @@ def rlogloop(win):
                     pass
                 else:
                     if inch < 128 and inch > 31 and i < length - 1:
-                        win.move(posy,posx + i)
-                        win.addstr(instr.upper())
+                        win.addstr(posy,posx + i,instr.upper())
                         i = i + 1
                         inputlist[i] = "%s" % instr.upper()
                         win.refresh()
