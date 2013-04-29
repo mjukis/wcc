@@ -25,6 +25,7 @@ updt_cnt2 = 0
 db = None
 user = pwd.getpwuid(os.getuid())[0]
 operator = user.upper()
+fieldlist = ["callsign","rst_s","rst_r","qth","comments","timeoff","freq","power","band","mode","date","time","operator","location_id"]
 
 try:
     machine = socket.gethostname()
@@ -81,7 +82,8 @@ def rlogtemp(input,field):
     global db
     global operator
     global machine
-    query = "REPLACE INTO temp_rlog SET %s='%s', user='%s', machine='%s';" % (MySQLdb.escape_string(field), MySQLdb.escape_string(input),user.upper(),machine)
+    global fieldlist
+    query = "REPLACE INTO temp_rlog SET %s='%s', user='%s', machine='%s';" % (MySQLdb.escape_string(fieldlist[field]), MySQLdb.escape_string(input),user.upper(),machine)
     try:
         db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
         cur = db.cursor()
@@ -144,6 +146,26 @@ def check_messages(win):
     msg_checktime = time.time()
     if message > 0:
         win.addstr(23,1,"*** INCOMING MESSAGE***", curses.A_BLINK)
+    win.refresh()
+
+def get_oldinput(field):
+    global operator
+    global machine
+    global db
+    output = ""
+    query = "SELECT %s FROM temp_rlog WHERE (user = '%s' AND machine = '%s') LIMIT 1" % (field,operator,machine)
+    try:
+        db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
+        cur = db.cursor()
+        cur.execute(query)
+        row = cur.fetchone()
+        exit("%s = %s" % (query,row[0]))
+    except MySQLdb.Error, e:
+        return "MySQL ERROR"
+    finally:
+        if db:
+            db.close()
+    return(output[0])
     win.refresh()
 
 def check_dupe(win,dupe):
@@ -339,12 +361,19 @@ def draw_operator_window(win):
     operatorloop(win)
 
 def get_input(win,posy,posx,length,field):
+    global fieldlist
     win.keypad(1)
     starti = posy
     i = 0
     output = ""
-    emptyinput = " " * length
-    win.addstr(posx, posy, emptyinput,curses.A_REVERSE)
+    oldinput = get_oldinput(fieldlist[field])
+    exit(oldinput)
+    if oldinput == "":
+        emptyinput = " " * length
+    else:
+        emptyinput = str(oldinput)
+    inputlist = list(emptyinput)
+    win.addstr(posy, posx, emptyinput,curses.A_REVERSE)
     while 1:
         inch = win.getch()
         if inch != -1:
@@ -358,20 +387,28 @@ def get_input(win,posy,posx,length,field):
                 win.move(posy,posx + 1)
                 win.refresh()
                 break
-            if inch == 9:
-                #tab
+            if inch == 9 or inch == 260:
+                #tab or left
                 inputstring = "".join(inputlist)
                 output = inputstring.strip(' ')
-                win.addstr(posy,posx,emptystring,curses.A_REVERSE)
-                win.addstr(posy,posx,output,curses.A_REVERSE)
+                win.addstr(posy,posx,emptyinput)
+                win.addstr(posy,posx,output)
                 rlogtemp(output,field)
                 win.refresh()
-                return(-1)
+                if inch == 9:
+                    return(-1)
+                else:
+                    return(-2)
             try:
                 instr = str(chr(inch))
             except:
                 pass
             else:
+                if inch < 128 and inch > 31 and i < length:
+                    win.addstr(posy,posx + i,instr.upper())
+                    inputlist[i] = "%s" % instr.upper()
+                    i = i + 1
+                    win.refresh()
                 pass
 
 def operatorloop(win):
@@ -561,29 +598,34 @@ def draw_rlog_window(win):
 
 def rlogloop(win):
     global subprogram
+    global fieldlist
     win.keypad(1)
     field = 0
     i = 0
     posy = 5
     posx = 11
     length = 16
+    output = " "
     emptyinput = " " * length
     win.addstr(posy,posx,emptyinput,curses.A_REVERSE)
     inputlist = list(emptyinput)
-    fieldlist = ["callsign","rst_s","rst_r","qth","comments","timeoff","freq","power","band","mode","date","time","operator","location_id"]
     while 1:
-        if field != 0:
-            if field == 1:
-                pass
+        if field == 1:
+            return_input = get_input(win,5,39,3,field)
+            if return_input == -2:
+                field = field - 1
+            if return_input == -1:
+                field = field + 1
         if field == 0:
             inch = win.getch()
             if inch != -1:
                 if inch == 9:
-                    rlogtemp(output,fieldlist[field])
+                    rlogtemp(output,field)
+                    win.addstr(posy,posx,emptyinput)
+                    win.addstr(posy,posx,output)
                     field = field + 1
                     if field > 11:
                         field = 0
-                    break
                 if inch == 263 or inch == 8:
                     #backspace
                     i = i - 1
