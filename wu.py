@@ -35,22 +35,13 @@ wccutil = "WCC Util 0.0.7"
 msg_checktime = time.time()
 message = 0
 
-def getDate():
-    #let's make a pretty dd/mm/yy date
-    global currdate
+def get_datetime():
+    #let's make a pretty datetime
+    global timeoutput
 
     t = datetime.datetime.now()
     currdatetime = t.timetuple()
-    yr = str(currdatetime[0])
-    currdate = "%02d/%02d/%02d" % (int(yr[2:]),currdatetime[1],currdatetime[2])
-
-def getTime():
-    #and a pretty hh:mm:ss clock
-    global currtime
-
-    t = datetime.datetime.now()
-    currdatetime = t.timetuple()
-    currtime = "%02d:"%currdatetime[3] + "%02d:"%currdatetime[4] + "%02d"%currdatetime[5]
+    timeoutput = time.strftime("%d %b %Y %H:%M:%S",currdatetime)
 
 def get_rcontacts(scope):
     global db
@@ -119,14 +110,13 @@ def message_input(rcpt,operator,machine,message):
         if db:
             db.close()
 
-def writeDateTime(win):
+def write_datetime(win):
     #separate function since this gets done A LOT
-    getDate()
-    getTime()
+    get_datetime()
 
-    win.move(0,61)
+    win.move(0,59)
     win.clrtoeol()
-    win.addstr("%s" % currdate + " " + "%s" % currtime + " ", curses.A_REVERSE)
+    win.addstr(timeoutput, curses.A_REVERSE)
     win.refresh()
 
 def write_rcontacts(win):
@@ -309,7 +299,7 @@ def draw_menu_window(win):
     win.addstr(10,1,"4) Messaging")
     win.addstr(12,1,"5) Change Operator")
     win.addstr(14,1,"6) Exit")
-    writeDateTime(win)
+    write_datetime(win)
     win.refresh()    
     menuloop(win)
 
@@ -334,7 +324,7 @@ def draw_message_window(win):
     win.addstr(22,1,"Message:    ")
     emptyinput = " " * 61
     win.addstr(emptyinput)
-    writeDateTime(win)
+    write_datetime(win)
     win.refresh()    
     rcptloop(win)
 
@@ -344,7 +334,7 @@ def draw_operator_window(win):
     win.addstr(4,1,"Current Operator: " + operator)
     win.addstr(6,1,"Enter new Operator: ")
     win.addstr(6,21,"                ", curses.A_UNDERLINE)
-    writeDateTime(win)
+    write_datetime(win)
     win.refresh()    
     operatorloop(win)
 
@@ -428,7 +418,7 @@ def operatorloop(win):
                     return()
 	if time.time() > (msg_checktime + 10):
             check_messages(win)
-        writeDateTime(win)
+        write_datetime(win)
 
 def rcptloop(win):
     global operator
@@ -481,7 +471,7 @@ def rcptloop(win):
                     i = i + 1
                     inputlist[i] = "%s" % instr
                     win.refresh()
-        writeDateTime(win)
+        write_datetime(win)
         drawi = drawi + 1
         if drawi > 10:
             write_messages(win)
@@ -540,7 +530,7 @@ def msgloop(win,rcpt):
                     #PuTTY topleft
                     minimenu(win)
                     return()
-        writeDateTime(win)
+        write_datetime(win)
         drawi = drawi + 1
         if drawi > 10:
             write_messages(win)
@@ -565,7 +555,7 @@ def draw_rlog_window(win):
     win.addstr(7,59,"Time: ")
     win.addstr(8,1,"Comments: ")
     write_rcontacts(win)
-    writeDateTime(win)
+    write_datetime(win)
     win.refresh()    
     rlogloop(win)
 
@@ -621,7 +611,7 @@ def rlogloop(win):
                         check_dupe(win,output)            
 	if time.time() > (msg_checktime + 10):
             check_messages(win)
-        writeDateTime(win)
+        write_datetime(win)
 
 def menuloop(win):
     global subprogram
@@ -656,7 +646,7 @@ def menuloop(win):
                     break
 	if time.time() > (msg_checktime + 10):
             check_messages(win)
-        writeDateTime(win)
+        write_datetime(win)
 
 def mainloop(win):
     global subprogram
