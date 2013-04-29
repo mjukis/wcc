@@ -42,7 +42,7 @@ def getDate():
     t = datetime.datetime.now()
     currdatetime = t.timetuple()
     yr = str(currdatetime[0])
-    currdate = "%02d"%currdatetime[2] + "/" + "%02d"%currdatetime[1] + "/" + "%02d"%int(yr[2:])
+    currdate = "%02d/%02d/%02d" % (int(yr[2:]),currdatetime[1],currdatetime[2])
 
 def getTime():
     #and a pretty hh:mm:ss clock
