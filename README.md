@@ -19,4 +19,14 @@ To do
   Functioning message log viewer
   
 1.5.0 should have:
-  Radio log real-time
+  Threading
+  Offline handling
+  Radio log real-time Internet functions
+  Long form message system (email)
+    optional email connectivity
+  
+2.0.0
+  Database security
+  Forced program updating
+  Login
+  BBS
