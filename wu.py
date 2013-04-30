@@ -25,7 +25,7 @@ updt_cnt2 = 0
 db = None
 user = pwd.getpwuid(os.getuid())[0]
 operator = user.upper()
-fieldlist = ["callsign","rst_s","rst_r","qth","comments","timeoff","freq","power","band","mode","date","time","operator","location_id"]
+rloglist = ["callsign","rst_s","rst_r","qth","comments","timeoff","freq","power","band","mode","date","time","operator","location_id"]
 
 try:
     machine = socket.gethostname()
@@ -82,8 +82,8 @@ def rlogtemp(input,field):
     global db
     global operator
     global machine
-    global fieldlist
-    query = "REPLACE INTO temp_rlog SET %s='%s', user='%s', machine='%s';" % (MySQLdb.escape_string(fieldlist[field]), MySQLdb.escape_string(input),user.upper(),machine)
+    global rloglist
+    query = "INSERT INTO temp_rlog (%s,user,machine) VALUES ('%s','%s','%s') ON DUPLICATE KEY UPDATE %s='%s', user='%s', machine='%s';" % (MySQLdb.escape_string(rloglist[field]),MySQLdb.escape_string(input),user.upper(),machine,MySQLdb.escape_string(rloglist[field]), MySQLdb.escape_string(input),user.upper(),machine)
     try:
         db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
         cur = db.cursor()
@@ -159,13 +159,14 @@ def get_oldinput(field):
         cur = db.cursor()
         cur.execute(query)
         row = cur.fetchone()
-        exit("%s = %s" % (query,row[0]))
+        if row[0] != None:
+            output = row[0]
     except MySQLdb.Error, e:
         return "MySQL ERROR"
     finally:
         if db:
             db.close()
-    return(output[0])
+    return(str(output))
     win.refresh()
 
 def check_dupe(win,dupe):
@@ -360,56 +361,118 @@ def draw_operator_window(win):
     win.refresh()    
     operatorloop(win)
 
+def get_button(win,posy,posx,name):
+    win.keypad(1)
+    win.addstr(posy,posx,name,curses.A_REVERSE)
+    while 1:
+        inch = win.getch()
+        if inch != -1:
+            #first look for special usables
+            if inch == 96:
+                #local topleft
+                minimenu(win)
+                break
+            if inch == 167:
+                #PuTTY topleft
+                minimenu(win)
+                break
+            if inch == 10 or inch == 32:
+                #enter or space
+                win.addstr(posy,posx,name)
+                return(-6)
+            if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258:
+                win.addstr(posy,posx,name)
+                #tab or left or right or up or down
+                if inch == 258:
+                    #down
+                    return(-5)
+                elif inch == 259:
+                    #up
+                    return(-4)
+                elif inch == 260:
+                    #left
+                    return(-2)
+                elif inch == 261:
+                    #right
+                    return(-3)
+                else:
+                    return(-1)
+            try:
+                instr = str(chr(inch))
+            except:
+                pass
+            else:
+                pass
+        write_datetime(win)
+        win.refresh()
+
 def get_input(win,posy,posx,length,field):
-    global fieldlist
+    global rloglist
     win.keypad(1)
     starti = posy
     i = 0
     output = ""
-    oldinput = get_oldinput(fieldlist[field])
-    exit(oldinput)
-    if oldinput == "":
-        emptyinput = " " * length
+    oldinput = get_oldinput(rloglist[field])
+    if len(oldinput) > 0:
+        input_spaces = length - len(oldinput)
+        emptyinput = oldinput + " " * input_spaces
     else:
-        emptyinput = str(oldinput)
+        emptyinput = " " * length
     inputlist = list(emptyinput)
     win.addstr(posy, posx, emptyinput,curses.A_REVERSE)
     while 1:
         inch = win.getch()
         if inch != -1:
             #first look for special usables
-            if inch == 263 or inch == 8:
+            if inch == 96:
+                #local topleft
+                minimenu(win)
+                break
+            if inch == 167:
+                #PuTTY topleft
+                minimenu(win)
+                break
+            if inch == 263 or inch == 8 and i > 0:
                 #backspace
                 i = i - 1
-                if i < 1:
-                    break
-                win.addstr(posy,posx + 1," ",curses.A_REVERSE)
-                win.move(posy,posx + 1)
+                win.addstr(posy,posx + i," ",curses.A_REVERSE)
+                win.move(posy,posx + i)
                 win.refresh()
-                break
-            if inch == 9 or inch == 260:
+            if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258:
                 #tab or left
                 inputstring = "".join(inputlist)
                 output = inputstring.strip(' ')
-                win.addstr(posy,posx,emptyinput)
+                win.addstr(posy,posx," " * length)
                 win.addstr(posy,posx,output)
                 rlogtemp(output,field)
                 win.refresh()
-                if inch == 9:
-                    return(-1)
-                else:
+                if inch == 258:
+                    #down
+                    return(-5)
+                elif inch == 259:
+                    #up
+                    return(-4)
+                elif inch == 260:
+                    #left
                     return(-2)
+                elif inch == 261:
+                    #right
+                    return(-3)
+                else:
+                    return(-1)
             try:
                 instr = str(chr(inch))
             except:
                 pass
             else:
                 if inch < 128 and inch > 31 and i < length:
-                    win.addstr(posy,posx + i,instr.upper())
-                    inputlist[i] = "%s" % instr.upper()
+                    win.addstr(posy,posx + i,instr,curses.A_REVERSE)
+                    inputlist[i] = "%s" % instr
                     i = i + 1
                     win.refresh()
                 pass
+        write_datetime(win)
+        win.refresh()
 
 def operatorloop(win):
     global operator
@@ -591,6 +654,11 @@ def draw_rlog_window(win):
     win.addstr(7,44,"Date: ")
     win.addstr(7,59,"Time: ")
     win.addstr(8,1,"Comments: ")
+    win.addstr(8,59,"TOff: ")
+    win.addstr(21,1,"WCC Location ID: ")
+    win.addstr(20,60,".-------. .-------.")
+    win.addstr(21,60,"| CLEAR | | ENTER |")
+    win.addstr(22,60,"'-------' '-------'")
     write_rcontacts(win)
     write_datetime(win)
     win.refresh()    
@@ -598,34 +666,188 @@ def draw_rlog_window(win):
 
 def rlogloop(win):
     global subprogram
-    global fieldlist
+    global rloglist
     win.keypad(1)
     field = 0
     i = 0
     posy = 5
     posx = 11
     length = 16
-    output = " "
-    emptyinput = " " * length
-    win.addstr(posy,posx,emptyinput,curses.A_REVERSE)
-    inputlist = list(emptyinput)
+    output = ""
+    emptyinput = ""
     while 1:
         if field == 1:
             return_input = get_input(win,5,39,3,field)
+            if return_input == -5:
+                field = 7
+            if return_input == -3:
+                field = 2
             if return_input == -2:
-                field = field - 1
+                field = 0
             if return_input == -1:
-                field = field + 1
+                field = 2
+        if field == 2:
+            return_input = get_input(win,5,54,3,field)
+            if return_input == -5:
+                field = 8
+            if return_input == -3:
+                field = 6
+            if return_input == -2:
+                field = 1
+            if return_input == -1:
+                field = 3
+        if field == 3:
+            return_input = get_input(win,7,6,36,field)
+            if return_input == -5:
+                field = 4
+            if return_input == -4:
+                field = 0
+            if return_input == -3:
+                field = 10
+            if return_input == -1:
+                field = 4
+        if field == 4:
+            return_input = get_input(win,8,11,47,field)
+            if return_input == -5:
+                field = 13
+            if return_input == -4:
+                field = 3
+            if return_input == -3:
+                field = 14
+            if return_input == -1:
+                field = 5
+        if field == 5:
+            return_input = get_input(win,8,65,4,field)
+            if return_input == -5:
+                field = 14
+            if return_input == -4:
+                field = 11
+            if return_input == -2:
+                field = 4
+            if return_input == -1:
+                field = 6
+        if field == 6:
+            return_input = get_input(win,5,65,8,field)
+            if return_input == -5:
+                field = 9
+            if return_input == -2:
+                field = 2
+            if return_input == -1:
+                field = 7
+        if field == 7:
+            return_input = get_input(win,6,36,5,field)
+            if return_input == -5:
+                field = 3
+            if return_input == -4:
+                field = 1
+            if return_input == -3:
+                field = 8
+            if return_input == -1:
+                field = 8
+        if field == 8:
+            return_input = get_input(win,6,50,6,field)
+            if return_input == -5:
+                field = 10
+            if return_input == -4:
+                field = 2
+            if return_input == -3:
+                field = 9
+            if return_input == -2:
+                field = 7
+            if return_input == -1:
+                field = 9
+        if field == 9:
+            return_input = get_input(win,6,65,6,field)
+            if return_input == -5:
+                field = 11
+            if return_input == -4:
+                field = 6
+            if return_input == -2:
+                field = 8
+            if return_input == -1:
+                field = 10
+        if field == 10:
+            return_input = get_input(win,7,50,6,field)
+            if return_input == -4:
+                field = 8
+            if return_input == -3:
+                field = 11
+            if return_input == -2:
+                field = 3
+            if return_input == -1:
+                field = 11
+        if field == 11:
+            return_input = get_input(win,6,50,6,field)
+            if return_input == -5:
+                field = 5
+            if return_input == -4:
+                field = 9
+            if return_input == -2:
+                field = 10
+            if return_input == -1:
+                field = 13
+        if field == 13:
+            return_input = get_input(win,21,18,8,field)
+            if return_input == -4:
+                field = 4
+            if return_input == -3:
+                field = 14
+            if return_input == -1:
+                field = 14
+        if field == 14:
+            return_input = get_button(win,21,62,"CLEAR")
+            if return_input == -6:
+                pass #clear all fields and reset temp_rlog values
+            if return_input == -4:
+                field = 5
+            if return_input == -3:
+                field = 15
+            if return_input == -2:
+                field = 13
+            if return_input == -1:
+                field = 15
+        if field == 15:
+            return_input = get_button(win,21,72,"ENTER")
+            if return_input == -6:
+                pass #complete rlog sequence
+            if return_input == -4:
+                field = 5
+            if return_input == -2:
+                field = 14
+            if return_input == -1:
+                field = 0
         if field == 0:
+            if len(emptyinput) < 1:
+                oldinput = get_oldinput(rloglist[field])
+                if len(oldinput) > 0:
+                    input_spaces = length - len(oldinput)
+                    emptyinput = oldinput + " " * input_spaces
+                else:
+                    emptyinput = " " * length
+                inputlist = list(emptyinput)
+                win.addstr(posy,posx," " * length,curses.A_REVERSE)
+                win.addstr(posy, posx, emptyinput,curses.A_REVERSE)
             inch = win.getch()
             if inch != -1:
-                if inch == 9:
+                if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258:
+                    #tab or left or right or up or down
                     rlogtemp(output,field)
                     win.addstr(posy,posx,emptyinput)
                     win.addstr(posy,posx,output)
-                    field = field + 1
-                    if field > 11:
-                        field = 0
+                    if inch == 258:
+                        #down
+                        field = 3
+                    elif inch == 259:
+                        #up
+                        pass
+                    elif inch == 260:
+                        #left
+                        pass
+                    elif inch == 261:
+                        #right
+                        field = 1
+                    else:
+                        field = 1
                 if inch == 263 or inch == 8:
                     #backspace
                     i = i - 1
@@ -644,9 +866,9 @@ def rlogloop(win):
                     pass
                 else:
                     if inch < 128 and inch > 31 and i < length - 1:
-                        win.addstr(posy,posx + i,instr.upper())
-                        i = i + 1
+                        win.addstr(posy,posx + i,instr.upper(),curses.A_REVERSE)
                         inputlist[i] = "%s" % instr.upper()
+                        i = i + 1
                         win.refresh()
                         inputstring = "".join(inputlist)
                         output = inputstring.strip(' ')
@@ -660,6 +882,8 @@ def menuloop(win):
     while 1:
         inch = win.getch()
         if inch != -1:
+            win.addstr(1,1,"     ")
+            win.addstr(1,1,str(inch))
             try:
                 instr = str(chr(inch))
             except:
