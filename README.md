@@ -5,15 +5,15 @@ Wasteland Communication Corp software
   
 To do  
 -----  
-0.5.0 (requirements for WW2013) should have:
-- [ ] Functioning radio log with real-time dupe check
-- [ ] Functioning radiotelegram input form
-      - [ ] optional Message to online radio log users
-    - [ ] Functioning postal log
-    - [ ] Functioning messaging
-    - [x] Functioning operator change
-    - [ ] Database schedule
-    - [ ] Split up files
+*   0.5.0 (requirements for WW2013) should have:
+    * Functioning radio log with real-time dupe check
+    * Functioning radiotelegram input form
+      * optional Message to online radio log users
+    * Functioning postal log
+    * Functioning messaging
+    X Functioning operator change
+    * Database schedule
+    * Split up files
   
   
 *   1.0.0 (desirements for WW2013) should have:
