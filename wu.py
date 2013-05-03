@@ -40,7 +40,6 @@ message = 0
 def get_datetime():
     #let's make a pretty datetime
     global timeoutput
-
     t = datetime.datetime.now()
     currdatetime = t.timetuple()
     timeoutput = time.strftime("%d %b %Y %H:%M:%S",currdatetime)
@@ -48,7 +47,7 @@ def get_datetime():
 def get_rcontacts(scope):
     global db
     if scope == "today":
-        query = "SELECT callsign FROM rlog WHERE timeon BETWEEN SUBTIME(NOW(),'1 0:0:0') AND NOW()"
+        query = "SELECT callsign FROM rlog WHERE timeon BETWEEN SUBTIME(NOW(),'1 0:0:0') AND NOW();"
     if scope == "total":
         query = "SELECT callsign FROM rlog"
     try:
@@ -67,9 +66,9 @@ def get_rcontacts(scope):
 def get_pcontacts(scope):
     global db
     if scope == "today":
-        query = "SELECT id FROM post WHERE rdate BETWEEN SUBTIME(NOW(),'1 0:0:0') AND NOW()"
+        query = "SELECT id FROM post WHERE rdate BETWEEN SUBTIME(NOW(),'1 0:0:0') AND NOW();"
     if scope == "total":
-        query = "SELECT id FROM post"
+        query = "SELECT id FROM post;"
     try:
         db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
         cur = db.cursor()
@@ -175,7 +174,7 @@ def check_messages(win):
     global machine
     heartbeat(operator,machine)
     global db
-    query = "SELECT * FROM msgs WHERE (rcpt = '" + operator + "' OR rcpt = '" + machine + "') AND (timestamp BETWEEN SUBTIME(NOW(),'0 0:0:15') AND NOW()) ORDER BY timestamp LIMIT 1"
+    query = "SELECT * FROM msgs WHERE (rcpt = '" + operator + "' OR rcpt = '" + machine + "') AND (timestamp BETWEEN SUBTIME(NOW(),'0 0:0:15') AND NOW()) ORDER BY timestamp LIMIT 1;"
     try:
         db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
         cur = db.cursor()
@@ -197,7 +196,7 @@ def get_oldinput(field):
     global machine
     global db
     output = ""
-    query = "SELECT %s FROM temp_rlog WHERE (user = '%s' AND machine = '%s') LIMIT 1" % (field,operator,machine)
+    query = "SELECT %s FROM temp_rlog WHERE (user = '%s' AND machine = '%s') LIMIT 1;" % (field,operator,machine)
     try:
         db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
         cur = db.cursor()
@@ -218,7 +217,7 @@ def get_oldpost(field):
     global machine
     global db
     output = ""
-    query = "SELECT %s FROM temp_post WHERE (user = '%s' AND machine = '%s') LIMIT 1" % (field,operator,machine)
+    query = "SELECT %s FROM temp_post WHERE (user = '%s' AND machine = '%s') LIMIT 1;" % (field,operator,machine)
     try:
         db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
         cur = db.cursor()
@@ -226,6 +225,7 @@ def get_oldpost(field):
         row = cur.fetchone()
         try:
             output = row[0]
+            exit(output)
         except:
             pass
         else:
@@ -240,7 +240,7 @@ def get_oldpost(field):
 
 def check_dupe(win,dupe):
     global db
-    query = "SELECT * FROM rlog WHERE callsign LIKE '%" + dupe + "%' ORDER BY timeon LIMIT 1"
+    query = "SELECT * FROM rlog WHERE callsign LIKE '%" + dupe + "%' ORDER BY timeon LIMIT 1;"
     try:
         db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
         cur = db.cursor()
@@ -256,7 +256,10 @@ def check_dupe(win,dupe):
     if rows > 0:
         row = cur.fetchone()
         while row != None:
-            t = row[5]
+            if row[5] == None:
+                t = datetime.datetime.now()
+            else:
+                t = row[5]
             msgdatetime = t.timetuple()
             yr = str(msgdatetime[0])
             msgdate = "%02d"%msgdatetime[2] + "/" + "%02d"%msgdatetime[1] + "/" + "%02d"%int(yr[2:])
@@ -277,7 +280,7 @@ def write_online(win):
     usercount = 0
     ei = 0
     heartbeat(operator,machine)
-    query = "SELECT * FROM user_hb WHERE (timestamp BETWEEN SUBTIME(NOW(),'0 0:0:15') AND NOW()) ORDER BY user"
+    query = "SELECT * FROM user_hb WHERE (timestamp BETWEEN SUBTIME(NOW(),'0 0:0:15') AND NOW()) ORDER BY user;"
     while ei < 8:
         win.move(4 + ei,61)
         win.clrtoeol()
@@ -308,7 +311,7 @@ def write_messages(win):
     global db
     emptyline = " " * 59
     msgline = 4
-    query = "SELECT * FROM (SELECT * FROM msgs ORDER BY timestamp DESC LIMIT 7) AS last ORDER BY last.timestamp ASC"
+    query = "SELECT * FROM (SELECT * FROM msgs ORDER BY timestamp DESC LIMIT 7) AS last ORDER BY last.timestamp ASC;"
     try:
         db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
         cur = db.cursor()
@@ -499,6 +502,7 @@ def get_button(win,posy,posx,name):
 
 def get_postbool(win,posy,posx,tname,fname,field):
     win.keypad(1)
+    postintext = 0
     tfstring = " (UP or DOWN to change)"
     tf = get_oldpost(ploglist[field])
     tflist = [fname,tname]
@@ -527,24 +531,19 @@ def get_postbool(win,posy,posx,tname,fname,field):
                     tf = 0
                 win.addstr(posy,posx,tflist[tf],curses.A_REVERSE)
             if inch == 9 or inch == 260 or inch == 261:
+                #tab or left or right or up or down
+                postintext = tf
                 plogtemp(tf,field)
                 win.addstr(posy,posx,tflist[tf])
                 win.addstr(" " * len(tfstring))
-                #tab or left or right or up or down
-                if inch == 258:
-                    #down
-                    return(-5)
-                elif inch == 259:
-                    #up
-                    return(-4)
-                elif inch == 260:
+                if inch == 260:
                     #left
-                    return(-2)
+                    return(-2,postintext)
                 elif inch == 261:
                     #right
-                    return(-3)
+                    return(-3,postintext)
                 else:
-                    return(-1)
+                    return(-1,postintext)
         write_datetime(win)
         win.refresh()
 
@@ -561,7 +560,7 @@ def get_input(win,posy,posx,length,field):
     else:
         emptyinput = " " * length
     inputlist = list(emptyinput)
-    win.addstr(posy, posx, emptyinput,curses.A_REVERSE)
+    win.addstr(posy,posx,emptyinput,curses.A_REVERSE)
     while 1:
         inch = win.getch()
         if inch != -1:
@@ -887,7 +886,7 @@ def plogloop(win):
     emptyinput = ""
     while 1:
         if field == 0:
-            return_input = get_postinput(win,5,11,16,field)
+            return_input = get_postinput(win,5,9,16,field)
             if return_input == -5:
                 field = 2
             if return_input == -3:
@@ -896,12 +895,103 @@ def plogloop(win):
                 field = 1
         if field == 1:
             return_input = get_postbool(win,5,53,"INT","EXT",field)
-            if return_input == -5:
+            if return_input[0] == -5:
                 field = 3
-            if return_input == -2:
+            if return_input[0] == -2:
                 field = 0
+            if return_input[0] == -1:
+                if return_input[1] == 0:
+                    field = 2
+                else:
+                    field = 5
+        if field == 2:
+            return_input = get_postinput(win,6,9,32,field)
+            if return_input == -5:
+                field = 5
+            if return_input == -4:
+                field = 0
+            if return_input == -3:
+                field = 3
             if return_input == -1:
+                field = 3
+        if field == 3:
+            return_input = get_postinput(win,6,53,3,field)
+            if return_input == -4:
+                field = 1
+            if return_input == -3:
+                field = 4
+            if return_input == -2:
                 field = 2
+            if return_input == -1:
+                field = 4
+        if field == 4:
+            return_input = get_postinput(win,6,65,12,field)
+            if return_input == -5:
+                field = 8
+            if return_input == -2:
+                field = 3
+            if return_input == -1:
+                field = 7
+        if field == 5:
+            return_input = get_postinput(win,7,9,8,field)
+            if return_input == -5:
+                field = 7
+            if return_input == -4:
+                field = 2
+            if return_input == -3:
+                field = 8
+            if return_input == -1:
+                field = 7
+        if field == 6:
+            return_input = get_postinput(win,21,18,8,field)
+            if return_input == -4:
+                field = 7
+            if return_input == -3:
+                field = 9
+            if return_input == -1:
+                field = 9
+        if field == 7:
+            return_input = get_postinput(win,8,9,32,field)
+            if return_input == -5:
+                field = 6
+            if return_input == -4:
+                field = 5
+            if return_input == -1:
+                field = 9
+        if field == 8:
+            return_input = get_postinput(win,7,64,6,field)
+            if return_input == -5:
+                field = 9
+            if return_input == -4:
+                field = 4
+            if return_input == -2:
+                field = 5
+            if return_input == -1:
+                field = 6
+        if field == 9:
+            return_input = get_postinput(win,5,11,16,field)
+            if return_input == -5:
+                field = 2
+            if return_input == -3:
+                field = 1
+            if return_input == -1:
+                field = 1
+        if field == 10:
+            return_input = get_postinput(win,5,11,16,field)
+            if return_input == -5:
+                field = 2
+            if return_input == -3:
+                field = 1
+            if return_input == -1:
+                field = 1
+        if field == 11:
+            return_input = get_postinput(win,5,11,16,field)
+            if return_input == -5:
+                field = 2
+            if return_input == -3:
+                field = 1
+            if return_input == -1:
+                field = 1
 	if time.time() > (msg_checktime + 10):
             check_messages(win)
         write_datetime(win)
