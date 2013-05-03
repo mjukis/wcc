@@ -1,6 +1,6 @@
 #! /usr/bin/python
 #--------------------
-# WCC Utilities 0.0.7
+# WCC Utilities 0.0.8
 # By Erik N8MJK
 #--------------------
 
@@ -26,13 +26,14 @@ db = None
 user = pwd.getpwuid(os.getuid())[0]
 operator = user.upper()
 rloglist = ["callsign","rst_s","rst_r","qth","comments","timeoff","freq","power","band","mode","date","time","operator","location_id"]
+ploglist = ["mailtype","internal","destcity","deststate","destzip","deststation","fromstation","barter","rdate"]
 
 try:
     machine = socket.gethostname()
 except:
     machine = "computer"
 
-wccutil = "WCC Util 0.0.7"
+wccutil = "WCC Util 0.0.8"
 msg_checktime = time.time()
 message = 0
 
@@ -57,7 +58,26 @@ def get_rcontacts(scope):
         rows = cur.rowcount
         return "%s" % rows
     except MySQLdb.Error, e:
-        return "MySQL ERROR"
+        return "ERR"
+    finally:
+        if db:
+            db.close()
+    return "0"
+
+def get_pcontacts(scope):
+    global db
+    if scope == "today":
+        query = "SELECT id FROM post WHERE rdate BETWEEN SUBTIME(NOW(),'1 0:0:0') AND NOW()"
+    if scope == "total":
+        query = "SELECT id FROM post"
+    try:
+        db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
+        cur = db.cursor()
+        cur.execute(query)
+        rows = cur.rowcount
+        return "%s" % rows
+    except MySQLdb.Error, e:
+        return "ERR"
     finally:
         if db:
             db.close()
@@ -73,7 +93,7 @@ def heartbeat(operator,machine):
         db.commit()
     except MySQLdb.Error, e:
         db.rollback()
-        return "MySQL ERROR"
+        return "ERR"
     finally:
         if db:
             db.close()
@@ -91,7 +111,26 @@ def rlogtemp(input,field):
         db.commit()
     except MySQLdb.Error, e:
         db.rollback()
-        return "MySQL ERROR"
+        return "ERR"
+    finally:
+        if db:
+            db.close()
+        return()
+
+def plogtemp(input,field):
+    global db
+    global operator
+    global machine
+    global rloglist
+    query = "INSERT INTO temp_post (%s,user,machine) VALUES ('%s','%s','%s') ON DUPLICATE KEY UPDATE %s='%s', user='%s', machine='%s';" % (MySQLdb.escape_string(ploglist[field]),MySQLdb.escape_string(str(input)),user.upper(),machine,MySQLdb.escape_string(ploglist[field]), MySQLdb.escape_string(str(input)),user.upper(),machine)
+    try:
+        db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
+        cur = db.cursor()
+        cur.execute(query)
+        db.commit()
+    except MySQLdb.Error, e:
+        db.rollback()
+        return "ERR"
     finally:
         if db:
             db.close()
@@ -107,7 +146,7 @@ def message_input(rcpt,operator,machine,message):
         db.commit()
     except MySQLdb.Error, e:
         db.rollback()
-        return "MySQL ERROR"
+        return "ERR"
     finally:
         if db:
             db.close()
@@ -126,6 +165,11 @@ def write_rcontacts(win):
     win.addstr(3,17,get_rcontacts("today"))
     win.refresh()
 
+def write_pcontacts(win):
+    win.addstr(2,17,get_pcontacts("total"))
+    win.addstr(3,17,get_pcontacts("today"))
+    win.refresh()
+
 def check_messages(win):
     global operator
     global machine
@@ -139,7 +183,7 @@ def check_messages(win):
         rows = cur.rowcount
         message = rows
     except MySQLdb.Error, e:
-        return "MySQL ERROR"
+        return "ERR"
     finally:
         if db:
             db.close()
@@ -162,11 +206,36 @@ def get_oldinput(field):
         if row[0] != None:
             output = row[0]
     except MySQLdb.Error, e:
-        return "MySQL ERROR"
+        return "ERR"
     finally:
         if db:
             db.close()
     return(str(output))
+    win.refresh()
+
+def get_oldpost(field):
+    global operator
+    global machine
+    global db
+    output = ""
+    query = "SELECT %s FROM temp_post WHERE (user = '%s' AND machine = '%s') LIMIT 1" % (field,operator,machine)
+    try:
+        db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
+        cur = db.cursor()
+        cur.execute(query)
+        row = cur.fetchone()
+        try:
+            output = row[0]
+        except:
+            pass
+        else:
+            output = ""
+    except MySQLdb.Error, e:
+        return "ERR"
+    finally:
+        if db:
+            db.close()
+    return(output)
     win.refresh()
 
 def check_dupe(win,dupe):
@@ -178,7 +247,7 @@ def check_dupe(win,dupe):
         cur.execute(query)
         rows = cur.rowcount
     except MySQLdb.Error, e:
-        return "MySQL ERROR"
+        return "ERR"
     finally:
         if db:
             db.close()
@@ -228,7 +297,7 @@ def write_online(win):
             usercount = usercount + 1
             row = cur.fetchone()
     except MySQLdb.Error, e:
-        return "MySQL ERROR"
+        return "ERR"
     finally:
         if db:
             db.close()
@@ -264,7 +333,7 @@ def write_messages(win):
             win.refresh()
             row = cur.fetchone()
     except MySQLdb.Error, e:
-        return "MySQL ERROR"
+        return "ERR"
     finally:
         if db:
             db.close()
@@ -361,6 +430,28 @@ def draw_operator_window(win):
     win.refresh()    
     operatorloop(win)
 
+def draw_plog_window(win):
+    init_window(win)
+    win.addstr(2,1,"Total Mail: ")
+    win.addstr(3,1,"Mail Today: ")
+    win.addstr(5,1,"Type  : ")
+    win.addstr(5,44,"INT/EXT: ")
+    win.addstr(6,1,"D.City: ")
+    win.addstr(6,44,"D.State: ")
+    win.addstr(6,59,"D.ZIP: ")
+    win.addstr(7,1,"D.WCC : ")
+    win.addstr(7,44,"D.Grid: ")
+    win.addstr(7,59,"Date: ")
+    win.addstr(8,1,"Barter: ")
+    win.addstr(21,1,"WCC Location ID: ")
+    win.addstr(20,60,".-------. .-------.")
+    win.addstr(21,60,"| CLEAR | | ENTER |")
+    win.addstr(22,60,"'-------' '-------'")
+    write_pcontacts(win)
+    write_datetime(win)
+    win.refresh()    
+    plogloop(win)
+
 def get_button(win,posy,posx,name):
     win.keypad(1)
     win.addstr(posy,posx,name,curses.A_REVERSE)
@@ -406,6 +497,57 @@ def get_button(win,posy,posx,name):
         write_datetime(win)
         win.refresh()
 
+def get_postbool(win,posy,posx,tname,fname,field):
+    win.keypad(1)
+    tfstring = " (UP or DOWN to change)"
+    tf = get_oldpost(ploglist[field])
+    tflist = [fname,tname]
+    try:
+        win.addstr(posy,posx,tflist[tf],curses.A_REVERSE)
+    except:
+        tf = 1
+        win.addstr(posy,posx,tflist[tf],curses.A_REVERSE)
+    win.addstr(posy,posx+3,tfstring)
+    output = 0
+    while 1:
+        inch = win.getch()
+        if inch != -1:
+            #first look for special usables
+            if inch == 96:
+                #local topleft
+                minimenu(win)
+                break
+            if inch == 167:
+                #PuTTY topleft
+                minimenu(win)
+                break
+            if inch == 259 or inch == 258:
+                tf = tf + 1
+                if tf == 2:
+                    tf = 0
+                win.addstr(posy,posx,tflist[tf],curses.A_REVERSE)
+            if inch == 9 or inch == 260 or inch == 261:
+                plogtemp(tf,field)
+                win.addstr(posy,posx,tflist[tf])
+                win.addstr(" " * len(tfstring))
+                #tab or left or right or up or down
+                if inch == 258:
+                    #down
+                    return(-5)
+                elif inch == 259:
+                    #up
+                    return(-4)
+                elif inch == 260:
+                    #left
+                    return(-2)
+                elif inch == 261:
+                    #right
+                    return(-3)
+                else:
+                    return(-1)
+        write_datetime(win)
+        win.refresh()
+
 def get_input(win,posy,posx,length,field):
     global rloglist
     win.keypad(1)
@@ -445,6 +587,74 @@ def get_input(win,posy,posx,length,field):
                 win.addstr(posy,posx," " * length)
                 win.addstr(posy,posx,output)
                 rlogtemp(output,field)
+                win.refresh()
+                if inch == 258:
+                    #down
+                    return(-5)
+                elif inch == 259:
+                    #up
+                    return(-4)
+                elif inch == 260:
+                    #left
+                    return(-2)
+                elif inch == 261:
+                    #right
+                    return(-3)
+                else:
+                    return(-1)
+            try:
+                instr = str(chr(inch))
+            except:
+                pass
+            else:
+                if inch < 128 and inch > 31 and i < length:
+                    win.addstr(posy,posx + i,instr,curses.A_REVERSE)
+                    inputlist[i] = "%s" % instr
+                    i = i + 1
+                    win.refresh()
+                pass
+        write_datetime(win)
+        win.refresh()
+
+def get_postinput(win,posy,posx,length,field):
+    global ploglist
+    win.keypad(1)
+    starti = posy
+    i = 0
+    output = ""
+    oldinput = get_oldpost(ploglist[field])
+    if len(oldinput) > 0:
+        input_spaces = length - len(oldinput)
+        emptyinput = oldinput + " " * input_spaces
+    else:
+        emptyinput = " " * length
+    inputlist = list(emptyinput)
+    win.addstr(posy, posx, emptyinput,curses.A_REVERSE)
+    while 1:
+        inch = win.getch()
+        if inch != -1:
+            #first look for special usables
+            if inch == 96:
+                #local topleft
+                minimenu(win)
+                break
+            if inch == 167:
+                #PuTTY topleft
+                minimenu(win)
+                break
+            if inch == 263 or inch == 8 and i > 0:
+                #backspace
+                i = i - 1
+                win.addstr(posy,posx + i," ",curses.A_REVERSE)
+                win.move(posy,posx + i)
+                win.refresh()
+            if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258:
+                #tab or left
+                inputstring = "".join(inputlist)
+                output = inputstring.strip(' ')
+                win.addstr(posy,posx," " * length)
+                win.addstr(posy,posx,output)
+                plogtemp(output,field)
                 win.refresh()
                 if inch == 258:
                     #down
@@ -663,6 +873,38 @@ def draw_rlog_window(win):
     write_datetime(win)
     win.refresh()    
     rlogloop(win)
+
+def plogloop(win):
+    global subprogram
+    global ploglist
+    win.keypad(1)
+    field = 0
+    i = 0
+    posy = 5
+    posx = 11
+    length = 16
+    output = ""
+    emptyinput = ""
+    while 1:
+        if field == 0:
+            return_input = get_postinput(win,5,11,16,field)
+            if return_input == -5:
+                field = 2
+            if return_input == -3:
+                field = 1
+            if return_input == -1:
+                field = 1
+        if field == 1:
+            return_input = get_postbool(win,5,53,"INT","EXT",field)
+            if return_input == -5:
+                field = 3
+            if return_input == -2:
+                field = 0
+            if return_input == -1:
+                field = 2
+	if time.time() > (msg_checktime + 10):
+            check_messages(win)
+        write_datetime(win)
 
 def rlogloop(win):
     global subprogram
@@ -901,6 +1143,9 @@ def menuloop(win):
                 if instr == '1':
                     subprogram = 1
                     break
+                if instr == '3':
+                    subprogram = 3
+                    break
                 if instr == '4':
                     subprogram = 4
                     break
@@ -925,6 +1170,8 @@ def mainloop(win):
             draw_menu_window(win)
         if subprogram == 1:
             draw_rlog_window(win)
+        if subprogram == 3:
+            draw_plog_window(win)
         if subprogram == 4:
             draw_message_window(win)
         if subprogram == 5:
