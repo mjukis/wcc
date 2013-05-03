@@ -11,7 +11,7 @@ To do
       * optional Message to online radio log users
     * Functioning postal log
     * Functioning messaging
-    X Functioning operator change
+    - [x] Functioning operator change
     * Database schedule
     * Split up files
   
