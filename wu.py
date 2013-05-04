@@ -25,7 +25,7 @@ updt_cnt2 = 0
 db = None
 user = pwd.getpwuid(os.getuid())[0]
 operator = user.upper()
-rloglist = ["callsign","rst_s","rst_r","qth","comments","timeoff","freq","power","band","mode","date","time","operator","location_id"]
+rloglist = ["callsign","rst_s","rst_r","qth","comments","timeoff","freq","power","band","mode","timeon","time","operator","location_id"]
 ploglist = ["mailtype","internal","destcity","deststate","destzip","deststation","fromstation","barter","rdate"]
 
 try:
@@ -36,6 +36,11 @@ except:
 wccutil = "WCC Util 0.0.8"
 msg_checktime = time.time()
 message = 0
+
+def xstr(s):
+    if s is None:
+        return ''
+    return str(s)
 
 def get_datetime():
     #let's make a pretty datetime
@@ -102,7 +107,7 @@ def rlogtemp(input,field):
     global operator
     global machine
     global rloglist
-    query = "INSERT INTO temp_rlog (%s,user,machine) VALUES ('%s','%s','%s') ON DUPLICATE KEY UPDATE %s='%s', user='%s', machine='%s';" % (MySQLdb.escape_string(rloglist[field]),MySQLdb.escape_string(input),user.upper(),machine,MySQLdb.escape_string(rloglist[field]), MySQLdb.escape_string(input),user.upper(),machine)
+    query = "INSERT INTO temp_rlog (%s,user,machine) VALUES ('%s','%s','%s') ON DUPLICATE KEY UPDATE %s='%s', user='%s', machine='%s';" % (rloglist[field],MySQLdb.escape_string(input),user.upper(),machine,rloglist[field],MySQLdb.escape_string(input),user.upper(),machine)
     try:
         db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
         cur = db.cursor()
@@ -202,7 +207,9 @@ def get_oldinput(field):
         cur = db.cursor()
         cur.execute(query)
         row = cur.fetchone()
-        if row[0] != None:
+        if row[0] == None:
+            output = ""
+        else:
             output = row[0]
     except MySQLdb.Error, e:
         return "ERR"
@@ -240,7 +247,11 @@ def get_oldpost(field):
 
 def check_dupe(win,dupe):
     global db
-    query = "SELECT * FROM rlog WHERE callsign LIKE '%" + dupe + "%' ORDER BY timeon LIMIT 1;"
+    if len(dupe.strip(' ')) < 1:
+        win.addstr(6,1," " * 25)
+        win.addstr(9,1," " * 50)
+        return
+    query = "SELECT * FROM rlog WHERE callsign LIKE '%" + dupe + "%' ORDER BY timeon DESC LIMIT 1;"
     try:
         db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
         cur = db.cursor()
@@ -547,6 +558,81 @@ def get_postbool(win,posy,posx,tname,fname,field):
         write_datetime(win)
         win.refresh()
 
+def get_callinput(win,posy,posx,length,field):
+    global rloglist
+    win.keypad(1)
+    starti = posy
+    i = 0
+    output = ""
+    oldinput = get_oldinput(rloglist[field])
+    if len(oldinput) > 0:
+        i = len(oldinput)
+        input_spaces = length - len(oldinput)
+        emptyinput = oldinput + " " * input_spaces
+    else:
+        emptyinput = " " * length
+    inputlist = list(emptyinput)
+    win.addstr(posy,posx,emptyinput,curses.A_REVERSE)
+    win.move(posy,posx+i)
+    while 1:
+        inch = win.getch()
+        if inch != -1:
+            #first look for special usables
+            if inch == 96:
+                #local topleft
+                minimenu(win)
+                break
+                #PuTTY topleft
+                minimenu(win)
+                break
+            if inch == 263 or inch == 8:
+                if i > 0:
+                    #backspace
+                    i = i - 1
+                    win.addstr(posy,posx + i," ",curses.A_REVERSE)
+                    inputlist[i] = " "
+                    dupecheck = ''.join(inputlist)                    
+                    check_dupe(win,dupecheck.strip(' '))
+                    win.move(posy,posx + i)
+                    win.refresh()
+            if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258:
+                #tab or left
+                inputstring = "".join(inputlist)
+                output = inputstring.strip(' ')
+                win.addstr(posy,posx," " * length)
+                win.addstr(posy,posx,output)
+                rlogtemp(output,field)
+                win.refresh()
+                if inch == 258:
+                    #down
+                    return(-5)
+                elif inch == 259:
+                    #up
+                    return(-4)
+                elif inch == 260:
+                    #left
+                    return(-2)
+                elif inch == 261:
+                    #right
+                    return(-3)
+                else:
+                    return(-1)
+            try:
+                instr = str(chr(inch))
+            except:
+                pass
+            else:
+                if inch < 128 and inch > 31 and i < length:
+                    win.addstr(posy,posx + i,instr,curses.A_REVERSE)
+                    inputlist[i] = "%s" % instr
+                    dupecheck = ''.join(inputlist)                    
+                    check_dupe(win,dupecheck.strip(' '))
+                    i = i + 1
+                    win.refresh()
+                pass
+        write_datetime(win)
+        win.refresh()
+
 def get_input(win,posy,posx,length,field):
     global rloglist
     win.keypad(1)
@@ -585,7 +671,10 @@ def get_input(win,posy,posx,length,field):
                 output = inputstring.strip(' ')
                 win.addstr(posy,posx," " * length)
                 win.addstr(posy,posx,output)
-                rlogtemp(output,field)
+                if len(output) > 0:
+                    if field == 7:
+                        win.addstr("W")
+                    rlogtemp(output,field)
                 win.refresh()
                 if inch == 258:
                     #down
@@ -850,21 +939,36 @@ def msgloop(win,rcpt):
 
 def draw_rlog_window(win):
     init_window(win)
+    global operator
+    global machine
+    global db
+    query = "SELECT * FROM temp_rlog WHERE (user = '%s' AND machine = '%s') LIMIT 1;" % (operator,machine)
+    try:
+        db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
+        cur = db.cursor()
+        cur.execute(query)
+        row = cur.fetchone()
+    except MySQLdb.Error, e:
+        return "ERR"
+    finally:
+        if db:
+            db.close()
     win.addstr(2,1,"Total Contacts: ")
     win.addstr(3,1,"Contacts Today: ")
-    win.addstr(5,1,"Callsign: ")
-    win.addstr(5,29,"RST Sent: ")
-    win.addstr(5,44,"RST Recd: ")
-    win.addstr(5,59,"Freq: ")
-    win.addstr(6,29,"Power: ")
-    win.addstr(6,44,"Band: ")
-    win.addstr(6,59,"Mode: ")
-    win.addstr(7,1,"QTH: ")
-    win.addstr(7,44,"Date: ")
-    win.addstr(7,59,"Time: ")
-    win.addstr(8,1,"Comments: ")
-    win.addstr(8,59,"TOff: ")
-    win.addstr(21,1,"WCC Location ID: ")
+    win.addstr(5,1,"Callsign: " + xstr(row[4]))
+    win.addstr(5,29,"RST Sent: " + xstr(row[10]))
+    win.addstr(5,44,"RST Recd: " + xstr(row[11]))
+    win.addstr(5,59,"Freq: " + xstr(row[6]))
+    win.addstr(6,29,"Power: " + xstr(row[9]))
+    if len(str(row[9])) > 0:
+        win.addstr("W")
+    win.addstr(6,44,"Band: " + xstr(row[8]))
+    win.addstr(6,59,"Mode: " + xstr(row[7]))
+    win.addstr(7,1,"QTH: " + xstr(row[13]))
+    win.addstr(7,44,"D/T: " + xstr(row[5]))
+    win.addstr(8,1,"Comments: " + xstr(row[14]))
+    win.addstr(8,59,"TOff: " + xstr(row[12]))
+    win.addstr(21,1,"WCC Location ID: " + xstr(row[3]))
     win.addstr(20,60,".-------. .-------.")
     win.addstr(21,60,"| CLEAR | | ENTER |")
     win.addstr(22,60,"'-------' '-------'")
@@ -1008,7 +1112,7 @@ def rlogloop(win):
     output = ""
     emptyinput = ""
     while 1:
-        if field == 1:
+        if field == 1: #RST Sent
             return_input = get_input(win,5,39,3,field)
             if return_input == -5:
                 field = 7
@@ -1018,7 +1122,7 @@ def rlogloop(win):
                 field = 0
             if return_input == -1:
                 field = 2
-        if field == 2:
+        if field == 2: #RST Rec'd
             return_input = get_input(win,5,54,3,field)
             if return_input == -5:
                 field = 8
@@ -1028,7 +1132,7 @@ def rlogloop(win):
                 field = 1
             if return_input == -1:
                 field = 3
-        if field == 3:
+        if field == 3: #QTH
             return_input = get_input(win,7,6,36,field)
             if return_input == -5:
                 field = 4
@@ -1038,27 +1142,27 @@ def rlogloop(win):
                 field = 10
             if return_input == -1:
                 field = 4
-        if field == 4:
+        if field == 4: #Comments
             return_input = get_input(win,8,11,47,field)
             if return_input == -5:
                 field = 13
             if return_input == -4:
                 field = 3
             if return_input == -3:
-                field = 14
+                field = 5
             if return_input == -1:
                 field = 5
-        if field == 5:
+        if field == 5: #Time Off
             return_input = get_input(win,8,65,4,field)
             if return_input == -5:
                 field = 14
             if return_input == -4:
-                field = 11
+                field = 9
             if return_input == -2:
                 field = 4
             if return_input == -1:
                 field = 6
-        if field == 6:
+        if field == 6: #Freq
             return_input = get_input(win,5,65,8,field)
             if return_input == -5:
                 field = 9
@@ -1066,7 +1170,7 @@ def rlogloop(win):
                 field = 2
             if return_input == -1:
                 field = 7
-        if field == 7:
+        if field == 7: #Power
             return_input = get_input(win,6,36,5,field)
             if return_input == -5:
                 field = 3
@@ -1076,7 +1180,7 @@ def rlogloop(win):
                 field = 8
             if return_input == -1:
                 field = 8
-        if field == 8:
+        if field == 8: #Band
             return_input = get_input(win,6,50,6,field)
             if return_input == -5:
                 field = 10
@@ -1088,44 +1192,32 @@ def rlogloop(win):
                 field = 7
             if return_input == -1:
                 field = 9
-        if field == 9:
+        if field == 9: #Mode
             return_input = get_input(win,6,65,6,field)
             if return_input == -5:
-                field = 11
+                field = 5
             if return_input == -4:
                 field = 6
             if return_input == -2:
                 field = 8
             if return_input == -1:
                 field = 10
-        if field == 10:
-            return_input = get_input(win,7,50,6,field)
+        if field == 10: #Date/Time
+            return_input = get_input(win,7,49,19,field)
             if return_input == -4:
                 field = 8
-            if return_input == -3:
-                field = 11
             if return_input == -2:
                 field = 3
             if return_input == -1:
-                field = 11
-        if field == 11:
-            return_input = get_input(win,6,50,6,field)
-            if return_input == -5:
-                field = 5
-            if return_input == -4:
-                field = 9
-            if return_input == -2:
-                field = 10
-            if return_input == -1:
                 field = 13
-        if field == 13:
+        if field == 13: #WCC Location ID
             return_input = get_input(win,21,18,8,field)
             if return_input == -4:
                 field = 4
             if return_input == -3:
                 field = 14
             if return_input == -1:
-                field = 14
+                field = 15
         if field == 14:
             return_input = get_button(win,21,62,"CLEAR")
             if return_input == -6:
@@ -1135,9 +1227,9 @@ def rlogloop(win):
             if return_input == -3:
                 field = 15
             if return_input == -2:
-                field = 13
+                field = 12
             if return_input == -1:
-                field = 15
+                field = 0
         if field == 15:
             return_input = get_button(win,21,72,"ENTER")
             if return_input == -6:
@@ -1147,64 +1239,15 @@ def rlogloop(win):
             if return_input == -2:
                 field = 14
             if return_input == -1:
-                field = 0
+                field = 14
         if field == 0:
-            if len(emptyinput) < 1:
-                oldinput = get_oldinput(rloglist[field])
-                if len(oldinput) > 0:
-                    input_spaces = length - len(oldinput)
-                    emptyinput = oldinput + " " * input_spaces
-                else:
-                    emptyinput = " " * length
-                inputlist = list(emptyinput)
-                win.addstr(posy,posx," " * length,curses.A_REVERSE)
-                win.addstr(posy, posx, emptyinput,curses.A_REVERSE)
-            inch = win.getch()
-            if inch != -1:
-                if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258:
-                    #tab or left or right or up or down
-                    rlogtemp(output,field)
-                    win.addstr(posy,posx,emptyinput)
-                    win.addstr(posy,posx,output)
-                    if inch == 258:
-                        #down
-                        field = 3
-                    elif inch == 259:
-                        #up
-                        pass
-                    elif inch == 260:
-                        #left
-                        pass
-                    elif inch == 261:
-                        #right
-                        field = 1
-                    else:
-                        field = 1
-                if inch == 263 or inch == 8:
-                    #backspace
-                    i = i - 1
-                    if i < 1:
-                        break
-                    win.addstr(posy,posx + i," ",curses.A_REVERSE)
-                    win.move(posy,posx + i)
-                    win.refresh()
-                if inch == 96 or inch == 167:
-                    #topleft
-                    minimenu(win)
-                    return()
-                try:
-                    instr = str(chr(inch))
-                except:
-                    pass
-                else:
-                    if inch < 128 and inch > 31 and i < length - 1:
-                        win.addstr(posy,posx + i,instr.upper(),curses.A_REVERSE)
-                        inputlist[i] = "%s" % instr.upper()
-                        i = i + 1
-                        win.refresh()
-                        inputstring = "".join(inputlist)
-                        output = inputstring.strip(' ')
-                        check_dupe(win,output)            
+            return_input = get_callinput(win,posy,posx,16,field)
+            if return_input == -5:
+                field = 3
+            if return_input == -3:
+                field = 1
+            if return_input == -1:
+                field = 1
 	if time.time() > (msg_checktime + 10):
             check_messages(win)
         write_datetime(win)
