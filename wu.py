@@ -643,6 +643,7 @@ def get_input(win,posy,posx,length,field):
     if len(oldinput) > 0:
         input_spaces = length - len(oldinput)
         emptyinput = oldinput + " " * input_spaces
+        i = len(oldinput)
     else:
         emptyinput = " " * length
     inputlist = list(emptyinput)
@@ -659,12 +660,14 @@ def get_input(win,posy,posx,length,field):
                 #PuTTY topleft
                 minimenu(win)
                 break
-            if inch == 263 or inch == 8 and i > 0:
-                #backspace
-                i = i - 1
-                win.addstr(posy,posx + i," ",curses.A_REVERSE)
-                win.move(posy,posx + i)
-                win.refresh()
+            if inch == 263 or inch == 8:
+                if i > 0:
+                    #backspace
+                    i = i - 1
+                    inputlist[i] = " "
+                    win.addstr(posy,posx + i," ",curses.A_REVERSE)
+                    win.move(posy,posx + i)
+                    win.refresh()
             if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258:
                 #tab or left
                 inputstring = "".join(inputlist)
