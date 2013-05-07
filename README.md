@@ -9,7 +9,7 @@ To do
     * Functioning radio log with real-time dupe check
     * Functioning radiotelegram input form
       * optional Message to online radio log users
-    * Functioning postal log
+    - [x] Functioning postal log
     * Functioning messaging
     - [x] Functioning operator change
     * Database schedule
