@@ -33,6 +33,7 @@ try:
 except:
     machine = "computer"
 
+location = "HQ"
 wccutil = "WCC Util 0.0.8"
 msg_checktime = time.time()
 message = 0
@@ -45,8 +46,10 @@ def xstr(s):
 def get_datetime():
     #let's make a pretty datetime
     global timeoutput
+    global dateoutput
     t = datetime.datetime.now()
     currdatetime = t.timetuple()
+    dateoutput = time.strftime("%Y-%m-%d",currdatetime)
     timeoutput = time.strftime("%d %b %Y %H:%M:%S",currdatetime)
 
 def get_rcontacts(scope):
@@ -107,7 +110,7 @@ def rlogtemp(input,field):
     global operator
     global machine
     global rloglist
-    query = "INSERT INTO temp_rlog (%s,user,machine) VALUES ('%s','%s','%s') ON DUPLICATE KEY UPDATE %s='%s', user='%s', machine='%s';" % (rloglist[field],MySQLdb.escape_string(input),user.upper(),machine,rloglist[field],MySQLdb.escape_string(input),user.upper(),machine)
+    query = "INSERT INTO temp_rlog (%s,user,machine) VALUES ('%s','%s','%s') ON DUPLICATE KEY UPDATE %s='%s', user='%s', machine='%s';" % (rloglist[field],MySQLdb.escape_string(input),operator.upper(),machine,rloglist[field],MySQLdb.escape_string(input),operator.upper(),machine)
     try:
         db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
         cur = db.cursor()
@@ -125,8 +128,8 @@ def plogtemp(input,field):
     global db
     global operator
     global machine
-    global rloglist
-    query = "INSERT INTO temp_post (%s,user,machine) VALUES ('%s','%s','%s') ON DUPLICATE KEY UPDATE %s='%s', user='%s', machine='%s';" % (MySQLdb.escape_string(ploglist[field]),MySQLdb.escape_string(str(input)),user.upper(),machine,MySQLdb.escape_string(ploglist[field]), MySQLdb.escape_string(str(input)),user.upper(),machine)
+    global ploglist
+    query = "INSERT INTO temp_post (%s,user,machine) VALUES ('%s','%s','%s') ON DUPLICATE KEY UPDATE %s='%s', user='%s', machine='%s';" % (ploglist[field],MySQLdb.escape_string(str(input)),operator.upper(),machine,ploglist[field],MySQLdb.escape_string(str(input)),operator.upper(),machine)
     try:
         db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
         cur = db.cursor()
@@ -138,6 +141,57 @@ def plogtemp(input,field):
     finally:
         if db:
             db.close()
+        return()
+
+def clearpost(win):
+    global db
+    global operator
+    global machine
+    global location
+    global dateoutput
+    query1 = "INSERT INTO temp_post (user,machine,mailtype,internal,fromstation,destcity,deststate,destzip,destgrid,deststation,barter,rdate) VALUES ('%s','%s',NULL,0,'%s',NULL,NULL,NULL,NULL,NULL,NULL,'%s') " % (operator.upper(),machine,location,dateoutput)
+    query2 = "REPLACE INTO temp_post (user,machine,fromstation,rdate) VALUES ('%s','%s','%s','%s');" % (operator.upper(),machine,location,dateoutput)
+    query = query2
+    try:
+        db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
+        cur = db.cursor()
+        cur.execute(query)
+        db.commit()
+    except MySQLdb.Error, e:
+        db.rollback()
+        return "ERR"
+    finally:
+        if db:
+            db.close()
+        draw_plog_fields(win)
+        return()
+
+def commitpost(win,operation,operationold):
+    global db
+    global operator
+    global machine
+    global location
+    olddate = get_oldpost("rdate")
+    curr_date = datetime.date.today()
+    if olddate < curr_date:
+        op = operationold
+    else:
+        op = operation
+    query1 = "INSERT INTO post (mailtype,internal,fromstation,destcity,deststate,destzip,destgrid,deststation,barter,rdate) SELECT mailtype,internal,fromstation,destcity,deststate,destzip,destgrid,deststation,barter,rdate FROM temp_post WHERE user='%s' and machine = '%s';" % (operator.upper(),machine)
+    query2 = "INSERT INTO postlog (mailid,operator,machine,location_id,operation) SELECT LAST_INSERT_ID(),'%s','%s','%s','%s';" % (operator.upper(),machine,location,op)
+    try:
+        db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
+        cur = db.cursor()
+        cur.execute(query1)
+        cur.execute(query2)
+        db.commit()
+    except MySQLdb.Error, e:
+        db.rollback()
+        return "ERR"
+    finally:
+        if db:
+            db.close()
+        clearpost(win)
         return()
 
 def message_input(rcpt,operator,machine,message):
@@ -395,7 +449,6 @@ def init_window(win):
     win.addstr(0,0," " + topstring + topfillstring, curses.A_REVERSE)
     win.addstr(23,0,bottomfillstring + bottomstring + " ", curses.A_REVERSE)
 
-
 def draw_menu_window(win):
     init_window(win)
     win.addstr(2,1,"Main Menu",curses.A_BOLD)
@@ -444,23 +497,41 @@ def draw_operator_window(win):
     win.refresh()    
     operatorloop(win)
 
-def draw_plog_window(win):
-    init_window(win)
+def draw_plog_fields(win):
     win.addstr(2,1,"Total Mail: ")
     win.addstr(3,1,"Mail Today: ")
     win.addstr(5,1,"Type  : ")
+    win.addstr(xstr(get_oldpost("mailtype")))
     win.addstr(5,44,"INT/EXT: ")
-    win.addstr(6,1,"D.City: ")
-    win.addstr(6,44,"D.State: ")
-    win.addstr(6,59,"D.ZIP: ")
-    win.addstr(7,1,"D.WCC : ")
+    tf = get_oldpost("internal")
+    if tf == 1 or tf == 0:
+        pass
+    else:
+        tf = 0
+    tflist = ["EXT","INT"]
+    win.addstr(xstr(tflist[tf]))
+    win.addstr(6,1,"D.City:                   ")
+    win.addstr(6,9,xstr(get_oldpost("destcity")))
+    win.addstr(6,44,"D.State:    ")
+    win.addstr(6,53,xstr(get_oldpost("deststate")))
+    win.addstr(6,59,"D.ZIP:           ")
+    win.addstr(6,66,xstr(get_oldpost("destzip")))
+    win.addstr(7,1,"D.WCC :         ")
+    win.addstr(7,9,xstr(get_oldpost("deststation")))
     win.addstr(7,44,"D.Grid: ")
-    win.addstr(7,59,"Date: ")
-    win.addstr(8,1,"Barter: ")
-    win.addstr(21,1,"WCC Location ID: ")
+    win.addstr(7,59,"Date:           ")
+    win.addstr(7,65,xstr(get_oldpost("rdate")))
+    win.addstr(8,1,"Barter:                      ")
+    win.addstr(8,9,xstr(get_oldpost("barter")))
+    win.addstr(21,1,"WCC Location ID:         ")
+    win.addstr(21,18,xstr(get_oldpost("fromstation")))
     win.addstr(20,60,".-------. .-------.")
     win.addstr(21,60,"| CLEAR | | ENTER |")
     win.addstr(22,60,"'-------' '-------'")
+
+def draw_plog_window(win):
+    init_window(win)
+    draw_plog_fields(win)
     write_pcontacts(win)
     write_datetime(win)
     win.refresh()    
@@ -516,6 +587,10 @@ def get_postbool(win,posy,posx,tname,fname,field):
     postintext = 0
     tfstring = " (UP or DOWN to change)"
     tf = get_oldpost(ploglist[field])
+    if tf == 0 or tf == 1:
+        pass
+    else:
+        tf = 0
     tflist = [fname,tname]
     try:
         win.addstr(posy,posx,tflist[tf],curses.A_REVERSE)
@@ -714,12 +789,22 @@ def get_postinput(win,posy,posx,length,field):
     i = 0
     output = ""
     oldinput = get_oldpost(ploglist[field])
-    if len(oldinput) > 0:
-        input_spaces = length - len(oldinput)
-        emptyinput = oldinput + " " * input_spaces
-    else:
+    try:
+        postdatetime = oldinput.timetuple()
+        oldinput = time.strftime("%Y-%m-%d",postdatetime)
+    except:
+        pass
+    try:
+        if len(oldinput) > 0:
+            input_spaces = length - len(oldinput)
+            emptyinput = oldinput + " " * input_spaces
+            i = len(oldinput)
+        else:
+            emptyinput = " " * length
+    except:
         emptyinput = " " * length
     inputlist = list(emptyinput)
+    win.move(posy,posx+i)
     win.addstr(posy, posx, emptyinput,curses.A_REVERSE)
     while 1:
         inch = win.getch()
@@ -733,12 +818,14 @@ def get_postinput(win,posy,posx,length,field):
                 #PuTTY topleft
                 minimenu(win)
                 break
-            if inch == 263 or inch == 8 and i > 0:
-                #backspace
-                i = i - 1
-                win.addstr(posy,posx + i," ",curses.A_REVERSE)
-                win.move(posy,posx + i)
-                win.refresh()
+            if inch == 263 or inch == 8:
+                if i > 0:
+                    #backspace
+                    i = i - 1
+                    inputlist[i] =  " "
+                    win.addstr(posy,posx + i," ",curses.A_REVERSE)
+                    win.move(posy,posx + i)
+                    win.refresh()
             if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258:
                 #tab or left
                 inputstring = "".join(inputlist)
@@ -991,8 +1078,8 @@ def plogloop(win):
     length = 16
     output = ""
     emptyinput = ""
-    while 1:
-        if field == 0:
+    while subprogram == 3:
+        if field == 0: #Type
             return_input = get_postinput(win,5,9,16,field)
             if return_input == -5:
                 field = 2
@@ -1000,7 +1087,7 @@ def plogloop(win):
                 field = 1
             if return_input == -1:
                 field = 1
-        if field == 1:
+        if field == 1: #INT/EXT
             return_input = get_postbool(win,5,53,"INT","EXT",field)
             if return_input[0] == -5:
                 field = 3
@@ -1011,7 +1098,7 @@ def plogloop(win):
                     field = 2
                 else:
                     field = 5
-        if field == 2:
+        if field == 2: #D.City
             return_input = get_postinput(win,6,9,32,field)
             if return_input == -5:
                 field = 5
@@ -1021,7 +1108,7 @@ def plogloop(win):
                 field = 3
             if return_input == -1:
                 field = 3
-        if field == 3:
+        if field == 3: #D.State
             return_input = get_postinput(win,6,53,3,field)
             if return_input == -4:
                 field = 1
@@ -1031,7 +1118,7 @@ def plogloop(win):
                 field = 2
             if return_input == -1:
                 field = 4
-        if field == 4:
+        if field == 4: #D.ZIP
             return_input = get_postinput(win,6,65,12,field)
             if return_input == -5:
                 field = 8
@@ -1039,7 +1126,7 @@ def plogloop(win):
                 field = 3
             if return_input == -1:
                 field = 7
-        if field == 5:
+        if field == 5: #D.WCC - Destation Outpost
             return_input = get_postinput(win,7,9,8,field)
             if return_input == -5:
                 field = 7
@@ -1049,26 +1136,26 @@ def plogloop(win):
                 field = 8
             if return_input == -1:
                 field = 7
-        if field == 6:
+        if field == 6: #WCC Location ID
             return_input = get_postinput(win,21,18,8,field)
             if return_input == -4:
                 field = 7
             if return_input == -3:
                 field = 9
             if return_input == -1:
-                field = 9
-        if field == 7:
+                field = 8
+        if field == 7: #Barter
             return_input = get_postinput(win,8,9,32,field)
             if return_input == -5:
                 field = 6
             if return_input == -4:
                 field = 5
             if return_input == -1:
-                field = 9
-        if field == 8:
-            return_input = get_postinput(win,7,64,6,field)
+                field = 10
+        if field == 8: #Date
+            return_input = get_postinput(win,7,65,10,field)
             if return_input == -5:
-                field = 9
+                field = 10
             if return_input == -4:
                 field = 4
             if return_input == -2:
@@ -1076,29 +1163,30 @@ def plogloop(win):
             if return_input == -1:
                 field = 6
         if field == 9:
-            return_input = get_postinput(win,5,11,16,field)
-            if return_input == -5:
-                field = 2
+            return_input = get_button(win,21,62,"CLEAR")
+            if return_input == -6:
+                clearpost(win)
+                field = 0
+            if return_input == -4:
+                field = 8
             if return_input == -3:
-                field = 1
+                field = 10
+            if return_input == -2:
+                field = 6
             if return_input == -1:
-                field = 1
+                field = 0
         if field == 10:
-            return_input = get_postinput(win,5,11,16,field)
-            if return_input == -5:
-                field = 2
-            if return_input == -3:
-                field = 1
+            return_input = get_button(win,21,72,"ENTER")
+            if return_input == -6:
+                commitpost(win,"New log entry.","Postdated log entry.")
+                field = 0
+            if return_input == -4:
+                field = 8
+            if return_input == -2:
+                field = 9
             if return_input == -1:
-                field = 1
-        if field == 11:
-            return_input = get_postinput(win,5,11,16,field)
-            if return_input == -5:
-                field = 2
-            if return_input == -3:
-                field = 1
-            if return_input == -1:
-                field = 1
+                field = 9
+
 	if time.time() > (msg_checktime + 10):
             check_messages(win)
         write_datetime(win)
