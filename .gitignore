@@ -3,6 +3,9 @@
 # Vim backups
 *~
 
+# nano backups
+*.save*
+
 # C extensions
 *.so
 
