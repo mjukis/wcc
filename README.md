@@ -8,11 +8,8 @@ To do
 Completed:  
 *   Functioning postal log
 *   Functioning operator change
-<<<<<<< HEAD
 *   Functioning radio log with real-time dupe check
-=======
-*   Functioning readio log with real-time dupe check
->>>>>>> 995291fb7eb403fe92e5b8c65745bfb791c3dcc9
+  
   
 *   0.5.0 (requirements for WW2013) should have:
     * Functioning radiotelegram input form
