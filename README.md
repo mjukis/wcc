@@ -5,10 +5,10 @@ Wasteland Communication Corp software
   
 To do  
 -----  
-Completed:  
-*   Functioning postal log
-*   Functioning operator change
-*   Functioning radio log with real-time dupe check
+*   Completed:  
+    *   Functioning postal log
+    *   Functioning operator change
+    *   Functioning radio log with real-time dupe check
   
   
 *   0.5.0 (requirements for WW2013) should have:
