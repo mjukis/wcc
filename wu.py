@@ -1,6 +1,6 @@
 #! /usr/bin/python
 #--------------------
-# WCC Utilities 0.0.9
+# WCC Utilities 0.1.2
 # By Erik N8MJK
 #--------------------
 
@@ -27,6 +27,7 @@ user = pwd.getpwuid(os.getuid())[0]
 operator = user.upper()
 rloglist = ["callsign","rst_s","rst_r","qth","comments","timeoff","freq","power","band","mode","timeon","time","operator","location_id"]
 ploglist = ["mailtype","internal","destcity","deststate","destzip","deststation","fromstation","barter","rdate"]
+rgramlist = ["num","prec","hx","ck","poo","mon","day","toname","toadd1","toadd2","tocsz","tocountry","tophone","to_opnote","group1","group2","group3","group4","group5","group6","group7","group8","group9","group10","group11","group12","group13","group14","group15","group16","group17","group18","group19","group20","group21","group22","group23","group24","group25","sig","sig_opnote"]
 
 try:
     machine = socket.gethostname()
@@ -34,7 +35,7 @@ except:
     machine = "computer"
 
 location = "HQ"
-wccutil = "WCC Util 0.0.9"
+wccutil = "WCC Util 0.1.2"
 msg_checktime = time.time()
 message = 0
 
@@ -352,14 +353,40 @@ def get_oldpost(field):
         db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
         cur = db.cursor()
         cur.execute(query)
-        row = cur.fetchone()
-        try:
-            output = row[0]
-            exit(output)
-        except:
-            pass
+        if cur.rowcount < 1:
+            row = ["",""]
         else:
+            row = cur.fetchone()
+        if row[0] == None:
             output = ""
+        else:
+            output = row[0]
+    except MySQLdb.Error, e:
+        return "ERR"
+    finally:
+        if db:
+            db.close()
+    return(output)
+    win.refresh()
+
+def get_oldrgram(field):
+    global operator
+    global machine
+    global db
+    output = ""
+    query = "SELECT %s FROM temp_rgram WHERE (user = '%s' AND machine = '%s') LIMIT 1;" % (field,operator,machine)
+    try:
+        db = MySQLdb.connect('localhost','wcc','radiowave','wcc')
+        cur = db.cursor()
+        cur.execute(query)
+        if cur.rowcount < 1:
+            row = ["",""]
+        else:
+            row = cur.fetchone()
+        if row[0] == None:
+            output = ""
+        else:
+            output = row[0]
     except MySQLdb.Error, e:
         return "ERR"
     finally:
@@ -598,50 +625,66 @@ def draw_plog_fields(win):
     win.addstr(21,60,"| CLEAR | | ENTER |")
     win.addstr(22,60,"'-------' '-------'")
 
-def get_oldrgram(input):
-    if input == "number":
-        return "191"
-    if input == "precedence":
-        return "R"
-    if input == "hx":
-        return "HXF0513"
-    if input == "ck":
-        return "12"
-    if input == "po":
-        return "Los Angeles CA"
-    if input == "to":
-        return "Marie Lundin KJ6IRG"
-    if input == "tophone":
-        return "8055551216"
-    if input == "toadd":
-        return "5059 Larkspur Dr, Ventura, CA 93001"
-
-
 def draw_rgram_fields(win):
-    win.addstr(2,0,"--- WCC RADIOGRAM FORM --------------------------------------------------------")
-    win.addstr(3,1,"#:        ")
-    win.addstr(3,4,xstr(get_oldrgram("number")))
-    win.addstr(3,10,"Prec:          ")
-    win.addstr(3,16,xstr(get_oldrgram("precedence")))
-    win.addstr(3,26,"HX:       ")
-    win.addstr(3,30,xstr(get_oldrgram("hx")))
-    win.addstr(3,42,"CK:    ")
-    win.addstr(3,46,xstr(get_oldrgram("ck")))
-    win.addstr(3,50,"PO:                          ")
-    win.addstr(3,53,xstr(get_oldrgram("po")))
-    win.addstr(4,1,"To:                                              ")
-    win.addstr(4,5,xstr(get_oldrgram("to")))
-    win.addstr(4,50,"Phone:              ")
+    init_window(win)
+    win.addstr(3,0,"-------------------------------------------------------------------------------")
+    win.addstr(2,1,"#:")
+    win.addstr(2,3,xstr(get_oldrgram("num")))
+    win.addstr(2,10,"Prec:")
+    win.addstr(2,15,xstr(get_oldrgram("prec")))
+    win.addstr(2,25,"HX:")
+    win.addstr(2,28,xstr(get_oldrgram("hx")))
+    win.addstr(2,39,"CK:")
+    win.addstr(2,42,xstr(get_oldrgram("ck")))
+    win.addstr(2,47,"PO:")
+    win.addstr(2,50,xstr(get_oldrgram("poo")))
+    win.addstr(2,70,"M:")
+    win.addstr(2,72,xstr(get_oldrgram("mon")))
+    win.addstr(2,75,"D:")
+    win.addstr(2,77,xstr(get_oldrgram("day")))
+    win.addstr(4,1,"To:")
+    win.addstr(4,5,xstr(get_oldrgram("toname")))
+    win.addstr(4,50,"Phone:")
     win.addstr(4,57,xstr(get_oldrgram("tophone")))
-    win.addstr(5,5,xstr(get_oldrgram("toadd")))
-    win.addstr(6,0,"--- TEXT ----------------------------------------------------------------------")
-    win.addstr(8,1,"-------------- -------------- -------------- -------------- --------------")
-    win.addstr(10,1,"-------------- -------------- -------------- -------------- --------------")
+    win.addstr(5,50,"OpNote:")
+    win.addstr(5,58,xstr(get_oldrgram("to_opnote")))
+    win.addstr(5,5,xstr(get_oldrgram("toadd1")))
+    win.addstr(6,5,xstr(get_oldrgram("toadd2")))
+    win.addstr(7,5,xstr(get_oldrgram("tocsz")))
+    win.addstr(8,5,xstr(get_oldrgram("tocountry")))
+    win.addstr(9,0,"--- TEXT ----------------------------------------------------------------------")
+    win.addstr(11,1,"-------------- -------------- -------------- -------------- --------------")
+    win.addstr(11,1,xstr(get_oldrgram("group1")))
+    win.addstr(11,16,xstr(get_oldrgram("group2")))
+    win.addstr(11,31,xstr(get_oldrgram("group3")))
+    win.addstr(11,46,xstr(get_oldrgram("group4")))
+    win.addstr(11,61,xstr(get_oldrgram("group5")))
     win.addstr(12,1,"-------------- -------------- -------------- -------------- --------------")
+    win.addstr(12,1,xstr(get_oldrgram("group6")))
+    win.addstr(12,16,xstr(get_oldrgram("group7")))
+    win.addstr(12,31,xstr(get_oldrgram("group8")))
+    win.addstr(12,46,xstr(get_oldrgram("group9")))
+    win.addstr(12,61,xstr(get_oldrgram("group10")))
+    win.addstr(13,1,"-------------- -------------- -------------- -------------- --------------")
+    win.addstr(13,1,xstr(get_oldrgram("group11")))
+    win.addstr(13,16,xstr(get_oldrgram("group12")))
+    win.addstr(13,31,xstr(get_oldrgram("group13")))
+    win.addstr(13,46,xstr(get_oldrgram("group14")))
+    win.addstr(13,61,xstr(get_oldrgram("group15")))
     win.addstr(14,1,"-------------- -------------- -------------- -------------- --------------")
-    win.addstr(16,1,"-------------- -------------- -------------- -------------- --------------")
-    win.addstr(21,1,"WCC Location ID:         ")
-    win.addstr(21,18,xstr(get_oldrgram("fromstation")))
+    win.addstr(14,1,xstr(get_oldrgram("group16")))
+    win.addstr(14,16,xstr(get_oldrgram("group17")))
+    win.addstr(14,31,xstr(get_oldrgram("group18")))
+    win.addstr(14,46,xstr(get_oldrgram("group19")))
+    win.addstr(14,61,xstr(get_oldrgram("group20")))
+    win.addstr(15,1,"-------------- -------------- -------------- -------------- --------------")
+    win.addstr(15,1,xstr(get_oldrgram("group21")))
+    win.addstr(15,16,xstr(get_oldrgram("group22")))
+    win.addstr(15,31,xstr(get_oldrgram("group23")))
+    win.addstr(15,46,xstr(get_oldrgram("group24")))
+    win.addstr(15,61,xstr(get_oldrgram("group25")))
+    win.addstr(21,1,"WCC Location ID:")
+    win.addstr(21,18,xstr(get_oldrgram("location_id")))
     win.addstr(20,60,".-------. .-------.")
     win.addstr(21,60,"| CLEAR | | ENTER |")
     win.addstr(22,60,"'-------' '-------'")
@@ -652,9 +695,6 @@ def draw_rgram_window(win):
     write_datetime(win)
     win.refresh()    
     rgramloop(win)
-
-def rgramloop(win):
-    pass
 
 def draw_plog_window(win):
     init_window(win)
@@ -683,9 +723,12 @@ def get_button(win,posy,posx,name):
                 #enter or space
                 win.addstr(posy,posx,name)
                 return(-6)
-            if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258:
+            if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258 or inch == 353:
                 win.addstr(posy,posx,name)
                 #tab or left or right or up or down
+                if inch == 353:
+                    #shift-tab
+                    return(-7)
                 if inch == 258:
                     #down
                     return(-5)
@@ -800,7 +843,7 @@ def get_callinput(win,posy,posx,length,field):
                     check_dupe(win,dupecheck.strip(' '))
                     win.move(posy,posx + i)
                     win.refresh()
-            if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258:
+            if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258 or inch == 353:
                 #tab or left
                 inputstring = "".join(inputlist)
                 output = inputstring.strip(' ')
@@ -808,6 +851,9 @@ def get_callinput(win,posy,posx,length,field):
                 win.addstr(posy,posx,output)
                 rlogtemp(output,field)
                 win.refresh()
+                if inch == 353:
+                    #shift-tab
+                    return(-7)
                 if inch == 258:
                     #down
                     return(-5)
@@ -882,7 +928,7 @@ def get_input(win,posy,posx,length,field):
                     win.addstr(posy,posx + i," ",curses.A_REVERSE)
                     win.move(posy,posx + i)
                     win.refresh()
-            if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258:
+            if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258 or inch == 353:
                 #tab or left
                 inputstring = "".join(inputlist)
                 output = inputstring.strip(' ')
@@ -896,6 +942,9 @@ def get_input(win,posy,posx,length,field):
                     if field != 5 and field != 10:
                         rlogtemp(output,field)                
                 win.refresh()
+                if inch == 353:
+                    #shift-tab
+                    return(-7)
                 if inch == 258:
                     #down
                     return(-5)
@@ -994,6 +1043,88 @@ def get_input_DEPRECATED(win,posy,posx,length,field):
                 if inch < 128 and inch > 31 and i < length:
                     win.addstr(posy,posx + i,instr,curses.A_REVERSE)
                     inputlist[i] = "%s" % instr
+                    i = i + 1
+                    win.refresh()
+                pass
+        write_datetime(win)
+        win.refresh()
+
+def get_rgraminput(win,posy,posx,length,field):
+    global rgramlist
+    win.keypad(1)
+    starti = posy
+    i = 0
+    output = ""
+    oldinput = xstr(get_oldrgram(rgramlist[field]))
+    if len(oldinput) > 0:
+        input_spaces = length - len(oldinput)
+        emptyinput = oldinput + " " * input_spaces
+        i = len(oldinput)
+    else:
+        emptyinput = " " * length
+    inputlist = list(emptyinput)
+    win.move(posy,posx+i)
+    win.addstr(posy, posx, emptyinput,curses.A_REVERSE)
+    while 1:
+        inch = win.getch()
+        if inch != -1:
+            #first look for special usables
+            if inch == 96:
+                #local topleft
+                minimenu(win)
+                break
+            if inch == 167:
+                #PuTTY topleft
+                minimenu(win)
+                break
+            if inch == 263 or inch == 8:
+                if i > 0:
+                    #backspace
+                    i = i - 1
+                    inputlist[i] = " "
+                    if field > 13 and field < 39:
+                        win.addstr(posy,posx + i,"-",curses.A_REVERSE)
+                    else:
+                        win.addstr(posy,posx + i," ",curses.A_REVERSE)
+                        if field == 1:
+                            win.addstr("        ")
+                    win.move(posy,posx + i)
+                    win.refresh()
+            if inch == 9 or inch == 260 or inch == 261 or inch == 259 or inch == 258:
+                #tab or left
+                inputstring = "".join(inputlist)
+                output = inputstring.strip(' ')
+                win.addstr(posy,posx," " * length)
+                win.addstr(posy,posx,output)
+                win.refresh()
+                if inch == 258:
+                    #down
+                    return(-5)
+                elif inch == 259:
+                    #up
+                    return(-4)
+                elif inch == 260:
+                    #left
+                    return(-2)
+                elif inch == 261:
+                    #right
+                    return(-3)
+                else:
+                    return(-1)
+            try:
+                instr = str(chr(inch))
+            except:
+                pass
+            else:
+                if inch < 128 and inch > 31 and i < length:
+                    if field == 1:
+                        if inch == 69 or inch == 101:
+                            win.addstr(posy,posx + i,instr.upper() + "MERGENCY",curses.A_BLINK)
+                        else:
+                            win.addstr(posy,posx + i,instr.upper(),curses.A_REVERSE)
+                    else:
+                            win.addstr(posy,posx + i,instr.upper(),curses.A_REVERSE)
+                    inputlist[i] = "%s" % instr.upper()
                     i = i + 1
                     win.refresh()
                 pass
@@ -1293,6 +1424,160 @@ def draw_rlog_window(win):
     win.refresh()    
     rlogloop(win)
 
+def rgramloop(win):
+    global subprogram
+    global rgramlist
+    win.keypad(1)
+    field = 0
+    i = 0
+    posy = 5
+    posx = 11
+    length = 16
+    output = ""
+    emptyinput = ""
+    while subprogram == 2:
+        if field == 0: #Number
+            return_input = get_rgraminput(win,2,3,6,field)
+            if return_input == -5:
+                field = 7
+            if return_input == -3:
+                field = 1
+            if return_input == -1:
+                field = 1
+        if field == 1: #Precedence
+            return_input = get_rgraminput(win,2,15,1,field)
+            if return_input == -7:
+                field = 0
+            if return_input == -5:
+                field = 7
+            if return_input == -3:
+                field = 2
+            if return_input == -2:
+                field = 0
+            if return_input == -1:
+                field = 2
+        if field == 2: #HX
+            return_input = get_rgraminput(win,2,28,10,field)
+            if return_input == -7:
+                field = 1
+            if return_input == -5:
+                field = 7
+            if return_input == -3:
+                field = 4
+            if return_input == -2:
+                field = 1
+            if return_input == -1:
+                field = 4
+        if field == 4: #Point of Origin
+            return_input = get_rgraminput(win,2,50,20,field)
+            if return_input == -7:
+                field = 2
+            if return_input == -5:
+                field = 12
+            if return_input == -3:
+                field = 5
+            if return_input == -2:
+                field = 2
+            if return_input == -1:
+                field = 7
+        if field == 5: #Mon
+            return_input = get_rgraminput(win,2,72,2,field)
+            if return_input == -7:
+                field = 4
+            if return_input == -5:
+                field = 12
+            if return_input == -3:
+                field = 6
+            if return_input == -2:
+                field = 4
+            if return_input == -1:
+                field = 6
+        if field == 6: #Day
+            return_input = get_rgraminput(win,2,77,2,field)
+            if return_input == -7:
+                field = 5
+            if return_input == -5:
+                field = 12
+            if return_input == -2:
+                field = 5
+            if return_input == -1:
+                field = 7
+        if field == 7: #To Name/Call
+            return_input = get_rgraminput(win,4,5,32,field)
+            if return_input == -7:
+                field = 4
+            if return_input == -5:
+                field = 8
+            if return_input == -4:
+                field = 0
+            if return_input == -3:
+                field = 12
+            if return_input == -1:
+                field = 8
+        if field == 8: #To Address Line 1
+            return_input = get_rgraminput(win,5,5,32,field)
+            if return_input == -5:
+                field = 7
+            if return_input == -4:
+                field = 2
+            if return_input == -3:
+                field = 8
+            if return_input == -1:
+                field = 7
+        if field == 9: #To Address Line 2
+            return_input = get_rgraminput(win,6,5,32,field)
+            if return_input == -4:
+                field = 7
+            if return_input == -3:
+                field = 9
+            if return_input == -1:
+                field = 8
+        if field == 10: #To CSV
+            return_input = get_rgraminput(win,7,5,32,field)
+            if return_input == -5:
+                field = 6
+            if return_input == -4:
+                field = 5
+            if return_input == -1:
+                field = 10
+        if field == 11: #To Country
+            return_input = get_postinput(win,8,5,16,field)
+            if return_input == -5:
+                field = 10
+            if return_input == -4:
+                field = 4
+            if return_input == -2:
+                field = 5
+            if return_input == -1:
+                field = 6
+        if field == 63:
+            return_input = get_button(win,21,62,"CLEAR")
+            if return_input == -6:
+                clearpost(win)
+                field = 0
+            if return_input == -4:
+                field = 8
+            if return_input == -3:
+                field = 10
+            if return_input == -2:
+                field = 6
+            if return_input == -1:
+                field = 0
+        if field == 64:
+            return_input = get_button(win,21,72,"ENTER")
+            if return_input == -6:
+                commitpost(win,"New log entry.","Postdated log entry.")
+                field = 0
+            if return_input == -4:
+                field = 8
+            if return_input == -2:
+                field = 9
+            if return_input == -1:
+                field = 9
+        if time.time() > (msg_checktime + 10):
+            check_messages(win)
+        write_datetime(win)
+
 def plogloop(win):
     global subprogram
     global ploglist
@@ -1431,6 +1716,8 @@ def rlogloop(win):
     while subprogram == 1:
         if field == 1: #RST Sent
             return_input = get_input(win,5,39,3,field)
+            if return_input == -7:
+                field = 0
             if return_input == -5:
                 field = 7
             if return_input == -3:
@@ -1441,6 +1728,8 @@ def rlogloop(win):
                 field = 2
         if field == 2: #RST Rec'd
             return_input = get_input(win,5,54,3,field)
+            if return_input == -7:
+                field = 1
             if return_input == -5:
                 field = 8
             if return_input == -3:
@@ -1451,6 +1740,8 @@ def rlogloop(win):
                 field = 3
         if field == 3: #QTH
             return_input = get_input(win,7,6,36,field)
+            if return_input == -7:
+                field = 2
             if return_input == -5:
                 field = 4
             if return_input == -4:
@@ -1461,6 +1752,8 @@ def rlogloop(win):
                 field = 4
         if field == 4: #Comments
             return_input = get_input(win,8,11,47,field)
+            if return_input == -7:
+                field = 3
             if return_input == -5:
                 field = 13
             if return_input == -4:
@@ -1471,6 +1764,8 @@ def rlogloop(win):
                 field = 5
         if field == 5: #Time Off
             return_input = get_input(win,8,65,8,field)
+            if return_input == -7:
+                field = 4
             if return_input == -5:
                 field = 14
             if return_input == -4:
@@ -1481,6 +1776,8 @@ def rlogloop(win):
                 field = 6
         if field == 6: #Freq
             return_input = get_input(win,5,65,8,field)
+            if return_input == -7:
+                field = 5
             if return_input == -5:
                 field = 9
             if return_input == -2:
@@ -1489,6 +1786,8 @@ def rlogloop(win):
                 field = 7
         if field == 7: #Power
             return_input = get_input(win,6,36,5,field)
+            if return_input == -7:
+                field = 6
             if return_input == -5:
                 field = 3
             if return_input == -4:
@@ -1499,6 +1798,8 @@ def rlogloop(win):
                 field = 8
         if field == 8: #Band
             return_input = get_input(win,6,50,6,field)
+            if return_input == -7:
+                field = 7
             if return_input == -5:
                 field = 10
             if return_input == -4:
@@ -1511,6 +1812,8 @@ def rlogloop(win):
                 field = 9
         if field == 9: #Mode
             return_input = get_input(win,6,65,6,field)
+            if return_input == -7:
+                field = 8
             if return_input == -5:
                 field = 5
             if return_input == -4:
@@ -1521,6 +1824,8 @@ def rlogloop(win):
                 field = 10
         if field == 10: #Date/Time
             return_input = get_input(win,7,49,19,field)
+            if return_input == -7:
+                field = 9
             if return_input == -4:
                 field = 8
             if return_input == -2:
@@ -1529,6 +1834,8 @@ def rlogloop(win):
                 field = 13
         if field == 13: #WCC Location ID
             return_input = get_input(win,21,18,8,field)
+            if return_input == -7:
+                field = 10
             if return_input == -4:
                 field = 4
             if return_input == -3:
@@ -1537,6 +1844,8 @@ def rlogloop(win):
                 field = 15
         if field == 14:
             return_input = get_button(win,21,62,"CLEAR")
+            if return_input == -7:
+                field = 15
             if return_input == -6:
                 clearrlog(win)
                 field = 0
@@ -1550,6 +1859,8 @@ def rlogloop(win):
                 field = 0
         if field == 15:
             return_input = get_button(win,21,72,"ENTER")
+            if return_input == -7:
+                field = 13
             if return_input == -6:
                 check_rlog_dates()
                 commitrlog(win)
@@ -1562,6 +1873,8 @@ def rlogloop(win):
                 field = 14
         if field == 0:
             return_input = get_callinput(win,posy,posx,16,field)
+            if return_input == -7:
+                field = 14
             if return_input == -5:
                 field = 3
             if return_input == -3:
