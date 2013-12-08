@@ -1,3 +1,6 @@
 [submodule "backend/tornado"]
 	path = backend/tornado
 	url = git@github.com:facebook/tornado.git
+[submodule "backend/pika"]
+	path = backend/pika
+	url = git@github.com:pika/pika.git
