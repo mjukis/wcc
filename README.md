@@ -6,6 +6,7 @@ Wasteland Communication Corp software
 Capabilities, both __required__ and desired 
 -----
 *   __Server, capable of running on a Raspberry Pi__
+    *   https://github.com/mjukis/wcc/tree/master/backend
 *   __Multiple clients, capable of running on a Raspberry Pi__
     *   __GUI emulates mostly functioning terminal__
     *   __Uses RabbitMQ to gather user input and deliver it to server/other clients__
