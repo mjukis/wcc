@@ -3,39 +3,23 @@ WCC
   
 Wasteland Communication Corp software  
   
-To do  
------  
-*   Completed:  
-    *   Functioning postal log
-    *   Functioning operator change
-    *   Functioning radio log with real-time dupe check
-  
-  
-*   0.5.0 (requirements for WW2013) should have:
-    * Functioning radiotelegram input form
-      * optional Message to online radio log users
-    * Functioning messaging
-    * Database schedule
-    * Split up files
-  
-  
-*   1.0.0 (desirements for WW2013) should have:
-    * Functioning mini-messenger standalone
-    * Functioning radio log viewer
-    * Functioning postal log viewer
-    * Functioning message log viewer
-  
-  
-*   1.5.0 (requirements for EoD2014) should have:
-    * Threading
-    * Offline handling
-    * Radio log real-time Internet functions  
-    * Long form message system (email)  
-      * optional email connectivity  
-  
-  
-*   2.0.0 (requirements for WW2014)
-    * Database security
-    * Forced program updating
-    * Login
-    * BBS
+Capabilities, both __required__ and desired 
+-----
+*   __Server, capable of running on a Raspberry Pi__
+*   __Multiple clients, capable of running on a Raspberry Pi__
+    *   __GUI emulates mostly functioning terminal__
+    *   __Uses RabbitMQ to gather user input and deliver it to server/other clients__
+    *   __Capable of working offline and storing messages until connected__
+    *   __Capable of Peer-to-Peer messaging when server is offline__
+        *   Capable of mesh networking via other clients
+    *   __Has multiple "apps"__
+        *   __Verify username and password__
+        *   __Postal Log w viewer/editor__
+        *   __Radio Log w viewer/editor__
+            *   Real-time Internet functions when available
+        *   Radiotelegram Input Form
+        *   __Instant Messaging with recipient (Like Twitter)__
+        *   __Long form messaging with recipient (Like email)__
+            *   Ability to send and recieve emails via system
+        *   BBS style message board   
+        *   Forced program updating
