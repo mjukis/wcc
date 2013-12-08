@@ -18,6 +18,7 @@ Capabilities, both __required__ and desired
         *   __Radio Log w viewer/editor__
             *   Real-time Internet functions when available
         *   Radiotelegram Input Form
+        *   __Single room group chat (Like an IRC channel)__
         *   __Instant Messaging with recipient (Like Twitter)__
         *   __Long form messaging with recipient (Like email)__
             *   Ability to send and recieve emails via system
