@@ -25,3 +25,16 @@ Capabilities, both __required__ and desired
             *   Ability to send and recieve emails via system
         *   BBS style message board   
         *   Forced program updating
+
+Client design
+-----
+*   Basics
+    *   Machine with 15" or smaller TFT screen, running 1024x768 resolution minimum
+    *   Upon powerup, boots automatically with no visual cues into WCC software
+    *   No local shell access
+*   Networking
+    *   Will autoconfigure networking and enter VPN via Ethernet port DHCP
+    *   Will allow user to configure WLAN SSID/pwd via WCC software, and will enter VPN via WLAN DHCP
+    *   Will mesh with other nodes and enter VPN via mesh
+    *   These modes selectable via settings
+
