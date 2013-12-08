@@ -12,3 +12,10 @@ Capabilities, both __required__ and desired
     *   __Stores Postal logs__
     *   BBS style message board
     *   Graceful reloading of updated components without lost connections
+*  User database
+   *  Identifies unique users with encrypted passwords
+   *  Each client able to add users while connected to server
+      *  When user is added, user data is created on the server
+   *  Each user able to login from any client while connected to server
+      *  After first login, user credentials are downloaded to client
+      *  Subsequent logins can be handled by client when offline
