@@ -19,3 +19,4 @@ Capabilities, both __required__ and desired
    *  Each user able to login from any client while connected to server
       *  After first login, user credentials are downloaded to client
       *  Subsequent logins can be handled by client when offline
+*  Client able to connect via ad-hoc WiFi, WiFi DHCP access point or wired DHCP router
