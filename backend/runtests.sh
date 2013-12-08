@@ -1,5 +1,6 @@
 #!/bin/bash
 
-export PYTHONPATH=$(basename $0)
+BASENAME=$(dirname $0)
+export PYTHONPATH=$BASENAME/tornado:$BASENAME/pika:$BASENAME/backend
 
-python backend/server.py
+python $BASENAME/backend/server.py
