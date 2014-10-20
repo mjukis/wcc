@@ -1,6 +1,6 @@
 #! /usr/bin/python
 #--------------------
-# WCC Async Frontend
+# WasteComm Terminal
 # v0.0.1
 # By Erik N8MJK
 #--------------------
@@ -9,9 +9,17 @@ import time
 import datetime
 import curses
 from tornado.ioloop import IOLoop, PeriodicCallback
+from tornado import gen
+
+def xstr(s):
+    if s is None:
+        return ''
+    return str(s)
 
 def draw_background(win):
     win.erase()
+#    topstring = wccutil
+#    bottomstring = operator + " @ " + machine
     topstring = "WASTECOMM NET TERMINAL"
     bottomstring = "WCC#657"
     bottomfillstring = (78 - len(bottomstring)) * " "
@@ -29,7 +37,7 @@ def get_datetime():
     timeoutput = time.strftime("%d %b %Y %H:%M:%S",currdatetime)
 
 def write_datetime(win):
-    #write the pretty datetime
+    #separate function since this gets done A LOT
     get_datetime()
     win.move(0,59)
     win.clrtoeol()
@@ -38,17 +46,14 @@ def write_datetime(win):
     win.refresh()
 
 def task():
-    #write the topright clock
     write_datetime(stdscr)
 
 def task2():
-    #write a string on the screen
     win = stdscr
     win.move(2,3)
     win.addstr("RAGH")
 
 def task3():
-    #kill the application
     win = stdscr
     stdscr.keypad(0)
     curses.echo()
@@ -84,4 +89,3 @@ if __name__ == "__main__":
     PeriodicCallback(task2, 3000).start()
     PeriodicCallback(task3, 10000).start()
     IOLoop.instance().start()
-
