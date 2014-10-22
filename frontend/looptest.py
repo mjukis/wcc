@@ -8,6 +8,7 @@
 import time
 import datetime
 import curses
+import curses.ascii
 from tornado.ioloop import IOLoop, PeriodicCallback
 from tornado import gen
 from mainmenu import *
@@ -17,6 +18,8 @@ promptx = 1
 promptstr = "WCC#657:>"
 promptlen = len(promptstr) + 2
 curx = promptlen
+userinput = []
+inputpos = 0
 
 def xstr(s):
     if s is None:
@@ -90,15 +93,35 @@ def task4():
     #function that reads and displays keypresses
     global curx
     global prompty
+    global userinput
+    global inputpos
     win = stdscr
     inch = win.getch()
     if inch > -1:
-        if inch == 167:
+        #check for escape chars
+        if inch == 167 or inch == 27:
             task3()
-        else:
+        #check for enter
+        if inch == 10:
+            win.addstr(prompty-1,1,xstr(userinput))
+        #check for backspace
+        if inch == 263:
+            inputpos = inputpos - 1
+            userinput[inputpos] = " "
+            win.addstr(prompty,curx-1," ")
+            curx = curx - 1
+            win.move(prompty,curx)
+        #print printable chars on prompt line
+        if curses.ascii.isprint(inch):
             win.addstr(prompty,curx,chr(inch))
+            userinput.append(" ")
+            userinput[inputpos] = chr(inch)
+            inputpos = inputpos + 1
             curx = curx + 1
             win.move(prompty,curx)
+        #show ASCII values of other stuffs
+        else:
+            win.addstr(20,15,xstr(inch))
 
 if __name__ == "__main__":
     try:
