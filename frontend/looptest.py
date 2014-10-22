@@ -1,7 +1,7 @@
 #! /usr/bin/python
 #--------------------
 # WasteComm Terminal
-# v0.0.1
+# v0.0.2
 # By Erik N8MJK
 #--------------------
 
@@ -10,6 +10,13 @@ import datetime
 import curses
 from tornado.ioloop import IOLoop, PeriodicCallback
 from tornado import gen
+from mainmenu import *
+
+prompty = 22
+promptx = 1
+promptstr = "WCC#657:>"
+promptlen = len(promptstr) + 2
+curx = promptlen
 
 def xstr(s):
     if s is None:
@@ -17,6 +24,9 @@ def xstr(s):
     return str(s)
 
 def draw_background(win):
+    global prompty
+    global promptx
+    global promptstr
     win.erase()
     topstring = "WASTECOMM NET TERMINAL"
     bottomstring = "WCC#657"
@@ -24,6 +34,12 @@ def draw_background(win):
     topfillstring = (78 - len(topstring)) * " "
     win.addstr(0,0," " + topstring + topfillstring, curses.A_REVERSE)
     win.addstr(23,0,bottomfillstring + bottomstring + " ", curses.A_REVERSE)
+    win.addstr(2,1,title_en,curses.A_BOLD)
+    win.addstr(prompty,promptx,promptstr)
+    line = 2
+    for i in range(0, len(items_en)):
+        line = line + 2
+        win.addstr(line,1," > " + items_en[i])
 
 def get_datetime():
     #let's make a pretty datetime
@@ -36,11 +52,16 @@ def get_datetime():
 
 def write_datetime(win):
     #let's write that pretty datetime
+    global prompty
+    global promptx
+    global promptstr
+    global promptlen
+    global curx
     get_datetime()
     win.move(0,59)
     win.clrtoeol()
     win.addstr(timeoutput, curses.A_REVERSE)
-    win.move(0,0)
+    win.move(prompty,curx)
     win.refresh()
 
 def task():
@@ -50,8 +71,8 @@ def task():
 def task2():
     #function that proves async by writing RAGH
     win = stdscr
-    win.move(2,3)
-    win.addstr("RAGH")
+    win.move(23,1)
+    win.addstr("* INCOMING MESSAGE *", curses.A_BLINK)
 
 def task3():
     #function that kills the program cleanly after a set time
@@ -67,13 +88,17 @@ def task3():
 
 def task4():
     #function that reads and displays keypresses
+    global curx
+    global prompty
     win = stdscr
     inch = win.getch()
     if inch > -1:
-        win.move(3,3)
-        win.addstr("      ")
-        win.move(3,3)
-        win.addstr(xstr(inch))
+        if inch == 167:
+            task3()
+        else:
+            win.addstr(prompty,curx,chr(inch))
+            curx = curx + 1
+            win.move(prompty,curx)
 
 if __name__ == "__main__":
     try:
@@ -108,5 +133,5 @@ if __name__ == "__main__":
     PeriodicCallback(task4, 100).start()
     PeriodicCallback(task, 1000).start()
     PeriodicCallback(task2, 3000).start()
-    PeriodicCallback(task3, 10000).start()
+#    PeriodicCallback(task3, 10000).start()
     IOLoop.instance().start()
