@@ -37,4 +37,21 @@ Client design
     *   Will allow user to configure WLAN SSID/pwd via WCC software, and will enter VPN via WLAN DHCP
     *   Will mesh with other nodes and enter VPN via mesh
     *   These modes selectable via settings
+*   Public Display
+    *   Shows computer status
+        *   Memory usage
+        *   CPU status
+        *   Core temp
+    *   Shows business data
+        *   Total radio contacts
+        *   Latest radio contact time/location
+        *   Day so far radio contacts
+        *   Total mail amount
+        *   Day so far mail amount
+    *   Shows location data
+        *   Ambient temperature
+        *   Power system voltage (per circuit)
+        *   Power system amperage (per circuit)
+        *   Total kWh per event
+        *   Day so far kWh
 
