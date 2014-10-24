@@ -2,6 +2,18 @@ WCC
 ===  
   
 Wasteland Communication Corp software  
+
+System requirements
+-----
+*   Python 2.7.6+
+    *   Libraries:
+        *   curses
+        *   tornado (pip install tornado)
+        *   psutil (apt-get install python-psutil)
+        *   couchdb (pip install couchdb)
+*   CouchDB (apt-get install couchdb)
+*   xwindows
+*   cool-retro-term and QT5 (sudo apt-get install build-essential qmlscene qt5-qmake qt5-default qtdeclarative5-dev qtdeclarative5-controls-plugin qtdeclarative5-qtquick2-plugin libqt5qml-graphicaleffects qtdeclarative5-dialogs-plugin qtdeclarative5-localstorage-plugin qtdeclarative5-window-plugin)
   
 Capabilities, both __required__ and desired 
 -----
