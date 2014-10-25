@@ -1,7 +1,7 @@
 #! /usr/bin/python
 #--------------------
 # WasteComm Terminal
-# v0.0.1
+# v0.0.2
 # By Erik N8MJK
 #--------------------
 
@@ -42,8 +42,7 @@ def draw_background(win):
     line = 2
     for i in range(0, len(items_en)):
         line = line + 2
-        win.addstr(line,1," > " + items_en[i])        
- 
+        win.addstr(line,1," > " + items_en[i])
 def get_datetime():
     #let's make a pretty datetime
     global timeoutput
@@ -66,16 +65,16 @@ def write_datetime(win):
     win.addstr(timeoutput, curses.A_REVERSE)
     win.move(prompty,curx)
     win.refresh()
- 
+
 def task():
     #function that calls the datetime-writer
     write_datetime(stdscr)
- 
+
 def task2():
     #function that proves async by writing RAGH
     win = stdscr
     win.move(23,1)
-    win.addstr("* INCOMING MESSAGE *", curses.A_BLINK) 
+    win.addstr("* INCOMING MESSAGE *", curses.A_BLINK)
 
 def task3():
     #function that kills the program cleanly after a set time
@@ -107,7 +106,7 @@ def task4():
         #check for backspace
         if inch == 263:
             inputpos = inputpos - 1
-            userinput[inputpos] = " "        
+            userinput[inputpos] = " "
             win.addstr(prompty,curx-1," ")
             curx = curx - 1
             win.move(prompty,curx)
