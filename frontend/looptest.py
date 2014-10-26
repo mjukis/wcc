@@ -9,6 +9,8 @@ import time
 import datetime
 import curses
 import curses.ascii
+import signal
+import sys
 from tornado.ioloop import IOLoop, PeriodicCallback
 from tornado import gen
 from mainmenu import *
@@ -122,6 +124,11 @@ def task4():
         else:
             win.addstr(20,15,xstr(inch))
 
+def signal_term_handler(signal, frame):
+    print 'got SIGTERM'
+    curses.reset_shell_mode()
+    sys.exit(0)
+
 if __name__ == "__main__":
     try:
         # Initialize curses
@@ -155,5 +162,10 @@ if __name__ == "__main__":
     PeriodicCallback(task4, 100).start()
     PeriodicCallback(task, 1000).start()
     PeriodicCallback(task2, 3000).start()
-#    PeriodicCallback(task3, 10000).start()
+    # PeriodicCallback(task3, 10000).start()
+    def signal_term_handler(signal, frame):
+      print 'got SIGINT, bailing\r\n'
+      curses.reset_shell_mode()
+      sys.exit(0)
+    signal.signal(signal.SIGINT, signal_term_handler)
     IOLoop.instance().start()
