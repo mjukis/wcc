@@ -1,7 +1,7 @@
 #! /usr/bin/python
 #--------------------
 # WasteComm Terminal
-# v0.0.2
+# v0.0.3
 # By Erik N8MJK
 #--------------------
 
@@ -12,8 +12,12 @@ import curses.ascii
 import signal
 import sys
 from tornado.ioloop import IOLoop, PeriodicCallback
+import tornado.iostream
+import socket
 from tornado import gen
 from mainmenu import *
+
+global stdscr
 
 prompty = 22
 promptx = 1
@@ -52,7 +56,7 @@ def get_datetime():
     t = datetime.datetime.now()
     currdatetime = t.timetuple()
     dateoutput = time.strftime("%Y-%m-%d",currdatetime)
-    timeoutput = time.strftime("%d %b %Y %H:%M:%S",currdatetime)
+    timeoutput = time.strftime("%d %b %H:%M:%S ",currdatetime)
 
 def write_datetime(win):
     #let's write that pretty datetime
@@ -62,7 +66,7 @@ def write_datetime(win):
     global promptlen
     global curx
     get_datetime()
-    win.move(0,59)
+    win.move(0,63)
     win.clrtoeol()
     win.addstr(timeoutput, curses.A_REVERSE)
     win.move(prompty,curx)
@@ -73,10 +77,16 @@ def task():
     write_datetime(stdscr)
 
 def task2():
-    #function that proves async by writing RAGH
+    win = stdscr
+    win.move(23,1)
+    win.addstr("                    ", curses.A_REVERSE)
+
+def incoming(feed):
     win = stdscr
     win.move(23,1)
     win.addstr("* INCOMING MESSAGE *", curses.A_BLINK)
+    ftime = time.time() + 30
+    IOLoop.instance().add_timeout(ftime,task2)
 
 def task3():
     #function that kills the program cleanly after a set time
@@ -124,6 +134,19 @@ def task4():
         else:
             win.addstr(20,15,xstr(inch))
 
+def changefeed_closed(feed):
+    pass
+
+def request_changefeed():
+    stream.write("GET /wcc_msgs/_changes?feed=continuous HTTP/1.0\r\nHost: localhost:5984\r\n\r\n")
+    stream.read_until_close(callback=changefeed_closed,streaming_callback=incoming)
+
+def msgfeed():
+    couch = couchdb.Server('http://127.0.0.1:5984')
+    db = couch['wcc_msgs']
+    changes = db.changes(feed='continuous',since=0,heartbeat=1000)
+    return changes
+
 def signal_term_handler(signal, frame):
     print 'got SIGTERM'
     curses.reset_shell_mode()
@@ -132,8 +155,7 @@ def signal_term_handler(signal, frame):
 if __name__ == "__main__":
     try:
         # Initialize curses
-        stdscr=curses.initscr()
-        global stdscr
+        stdscr = curses.initscr()
         curses.start_color()
         curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
         stdscr.bkgd(curses.color_pair(1))
@@ -161,11 +183,15 @@ if __name__ == "__main__":
     #normal callback for menus maybe?
     PeriodicCallback(task4, 100).start()
     PeriodicCallback(task, 1000).start()
-    PeriodicCallback(task2, 3000).start()
     # PeriodicCallback(task3, 10000).start()
     def signal_term_handler(signal, frame):
       print 'got SIGINT, bailing\r\n'
       curses.reset_shell_mode()
       sys.exit(0)
     signal.signal(signal.SIGINT, signal_term_handler)
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+    stream = tornado.iostream.IOStream(s)
+    stream.connect(("localhost",5984),request_changefeed)
+    task2()
     IOLoop.instance().start()
