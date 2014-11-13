@@ -1,23 +1,25 @@
 #! /usr/bin/python
 #--------------------
 # WasteComm Terminal
-# Menu Page v0.0.1
+# Tornado IOStream
 # By Erik N8MJK
 #--------------------
 
-from tornado.ioloop import IOLoop
-import couchdb
-import trombi
+import tornado.ioloop
+import tornado.iostream
+import socket
 
-def pchange(change):
-    print change
+def send_request():
+    stream.write("GET /wcc_msgs/_changes?feed=continuous HTTP/1.0\r\nHost: localhost:5984\r\n\r\n")
+    stream.read_until_close(callback=changeclose,streaming_callback=changereader) 
 
-def main():
-    s = trombi.Server('http://localhost:5984')
-    db = trombi.Database(s, 'wcc_msgs')
-    db.changes(pchange, feed='continuous', heartbeat='1000')
+def changeclose(feed):
+    pass
 
-if __name__ == '__main__':
-    ioloop = IOLoop.instance()
-    ioloop.add_callback(main)
-    ioloop.start()
+def changereader(feed):
+    print feed
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+stream = tornado.iostream.IOStream(s)
+stream.connect(("localhost",5984),send_request)
+tornado.ioloop.IOLoop.instance().start()
