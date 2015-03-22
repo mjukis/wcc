@@ -16,6 +16,37 @@ class color:
 global late
 late = False
 
+global track
+trackt = "Nothing Playing?"
+ntrackt = "Nothing Playing?"
+db = MySQLdb.connect("192.168.1.9","wcc","fleisch","radiodj161")
+#query = "SELECT title FROM history ORDER BY date_played DESC LIMIT 1"
+query = "SELECT artist,title,song_type FROM songs WHERE NOT song_type=2 ORDER BY date_played DESC LIMIT 1;"
+cur = db.cursor()
+cur.execute(query)
+row = cur.fetchone()
+db.close()
+
+if row != None:
+    trackt = "Playing: " + row[0] + " - " + row[1]
+    if row[2] != 0:
+        trackt = ""
+track = trackt[:60]
+
+db = MySQLdb.connect("192.168.1.9","wcc","fleisch","radiodj161")
+query = "SELECT songs.artist, songs.title FROM songs,queuelist WHERE songs.ID=queuelist.songID AND songs.song_type=0 LIMIT 1;"
+cur = db.cursor()
+cur.execute(query)
+row = cur.fetchone()
+db.close()
+
+if row != None:
+    ntrackt = row[0] + " - " + row[1]
+
+ntrack = ntrackt[:60] + " "
+#trackbarl = 46 - len(track)
+#trackbar = "-" * trackbarl
+
 def clear():
     return os.system('clear')
 
@@ -24,7 +55,8 @@ def inforow(title):
     titstart = "==="
     titend = "=" * (65 - titlen)
     titout = color.BOLD + titstart + " " + title + " " + titend + color.END
-    print titout
+    print titout , "\n" + track + "\nNext Up: " + ntrack
+#    print titout
 
 def schedule(when):
     weekday = when.strftime("%a")
@@ -33,6 +65,7 @@ def schedule(when):
 
 def eventsbyday(when):
     global late
+    global track
     schedule(when)
     day = int(when.strftime("%d"))
     lowlimit = day * 10000 + 800;
@@ -58,6 +91,7 @@ def eventsbyday(when):
                 eventtext = pre + eventtext + post
                 timebar = True
                 print("-" + nowtime + "-----------------------------------------------------------------")
+
             when2 = datetime.date(2015,9,int(eventdate))
             schedule(when2)
             day = eventdate
