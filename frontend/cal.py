@@ -43,12 +43,12 @@ def main():
       late = True
       arg = arg - 1
 
-  eventsbyday(screen,datetime.date(2015,9,arg))
+  eventsbyday(screen,datetime.date(2016,9,arg))
   distsleep(screen, 5)
   img = pygame.image.load(imgpath)
   screen.blit(img,(0,0))
   pygame.display.flip()
-  distsleep(screen, 5, False)
+  distsleep(screen, 1, False)
   pygame.display.update()
 
 def print_rad(screen, row, txt, tag = False):
@@ -113,16 +113,16 @@ def usleep(ms):
 # WASTELAND EVENT SCHEDULER
 # By Erik N8MJK
 
-def schedule(screen,when):
+def schedule(screen,when,row):
     weekday = when.strftime("%a")
     daymon = when.strftime("%d%b")
     daytitle = " " + weekday.upper() + "    " + daymon.upper() + "    EVENT"
-    print_rad(screen,2,daytitle,"BOLD")
+    print_rad(screen,int(row),daytitle,"BOLD")
 
 def eventsbyday(screen,when):
     global late
     ri = 3
-    schedule(screen,when)
+    schedule(screen,when,2)
     day = int(when.strftime("%d"))
     lowlimit = day * 100000000 + 7000000;
     highlimit = (day + 1) * 100000000 + 3010000;
@@ -135,6 +135,9 @@ def eventsbyday(screen,when):
     timebar = False
     prevtime = ""
     while row is not None:
+        nowwhen = datetime.datetime.fromtimestamp(time.time())
+        nowtime = nowwhen.strftime("%H%M")
+
 #        time.sleep(0.1)
         eventdate = row[0][:2]
         eventcat = row[0][6]
@@ -143,14 +146,16 @@ def eventsbyday(screen,when):
                 timebar = True
                 print_rad(screen,ri,"-" + nowtime + "-----------------------------------------------------------------")
                 ri = ri + 1        
-            when2 = datetime.date(2015,9,int(eventdate))
-            schedule(screen,when2)
+            when2 = datetime.date(2016,9,int(eventdate))
+            ri = ri + 1
+            schedule(screen,when2,ri)
+            ri = ri + 1
             day = eventdate
             if late == True:
                 late = False
             
         eventtime = row[0][2:6]
-        eventwhen = datetime.datetime(2015,9,int(eventdate),int(eventtime[:2]),int(eventtime[2:4]))
+        eventwhen = datetime.datetime(2016,9,int(eventdate),int(eventtime[:2]),int(eventtime[2:4]))
         nowwhen = datetime.datetime.fromtimestamp(time.time())
         nowtime = nowwhen.strftime("%H%M")
         eventustime = eventwhen.strftime("%I:%M%p")
