@@ -12,11 +12,13 @@ import sys
 import os
 import datetime
 import MySQLdb
+from vars import *
 
-global late
+#global late
 late = False
 
 def main():
+  global late
   pygame.init()
   pygame.mouse.set_visible(False)
   resolution = [640, 480]
@@ -24,12 +26,19 @@ def main():
   fontpath = './AtariST8x16SystemFont.ttf'
   font = pygame.font.Font(fontpath, 18)
   screen = pygame.display.set_mode(resolution, pygame.FULLSCREEN)
-  screen.fill([0,0,0])
+  screen.fill([0,20,0])
 
   inforad = " Schedule of Events"
-  radpad = " " * (53 - len(inforad))
-  infoout = inforad + radpad
+  inforad2 = "v2.0 "
+  infolen = 53 - len(inforad) - len(inforad2)
+  radpad = " " * infolen
+  infoout = inforad + radpad + inforad2
+  brad = footer
+  blen = 53 - len(brad)
+  bpad = " " * blen
+  bout  = bpad + brad
   print_rad(screen, 0, infoout,"TIT")
+  print_rad(screen, 26, bout,"TIT")
 #  print_rad(screen, 2, "This is testing")
 #  print_rad(screen, 3, "This is bold testing","BOLD")
   arg = 24
@@ -44,7 +53,7 @@ def main():
       arg = arg - 1
 
   eventsbyday(screen,datetime.date(2016,9,arg))
-  distsleep(screen, 5)
+  distsleep(screen, dtime)
   img = pygame.image.load(imgpath)
   screen.blit(img,(0,0))
   pygame.display.flip()
@@ -95,15 +104,15 @@ def distortion(screen):
      screen.scroll(-xscroll,-yscroll)
      pygame.display.update()
 
-def distsleep(screen,secs,counter=True):
+def distsleep(screen,msecs,counter=True):
   timepassed=0
-  while secs*1000 > timepassed:
+  while msecs > timepassed:
     distortion(screen)
     waiting = random.randint(200,2020)
     usleep(waiting)
     timepassed += waiting
     if counter == True:
-       print_rad(screen, 27, 'o    oxxxxxxxxx ' + str(timepassed) + ' --> ' + str(secs) + '000')
+       print_rad(screen, 26, 'T' + str(timepassed) + ' --> ' + str(msecs),"TIT")
 
 def usleep(ms):
   time.sleep(ms/1000.0)
@@ -137,6 +146,9 @@ def eventsbyday(screen,when):
     while row is not None:
         nowwhen = datetime.datetime.fromtimestamp(time.time())
         nowtime = nowwhen.strftime("%H%M")
+        nowustime = nowwhen.strftime("%I:%M%p")
+        if nowustime[0] == "0":
+            nowustime = "-" + nowustime.lstrip("0")
 
 #        time.sleep(0.1)
         eventdate = row[0][:2]
@@ -144,7 +156,7 @@ def eventsbyday(screen,when):
         if int(eventdate) != int(day):
             if late == False and timebar == False:
                 timebar = True
-                print_rad(screen,ri,"-" + nowtime + "-----------------------------------------------------------------")
+                print_rad(screen,ri,"-" + nowtime + "-" + nowustime  + "----------------------------------------------------------------")
                 ri = ri + 1        
             when2 = datetime.date(2016,9,int(eventdate))
             ri = ri + 1
@@ -171,7 +183,7 @@ def eventsbyday(screen,when):
         if int(nowtime) < int(eventtime) and timebar == False:
             if late == False:
                 timebar = True
-                print_rad(screen, ri, "-" + nowtime + "-----------------------------------------------------------------")
+                print_rad(screen, ri, "-" + nowtime + "-" + nowustime + "----------------------------------------------------------------")
                 ri = ri + 1        
         if str(eventtime) == prevtime:
             print_rad(screen, ri, "                 " + eventtext)
@@ -182,7 +194,7 @@ def eventsbyday(screen,when):
         prevtime = str(eventtime)
         row = cur.fetchone()
     if timebar == False and prevtime != "":
-        print_rad(screen,ri,"-" + nowtime + "-----------------------------------------------------------------")
+        print_rad(screen,ri,"-" + nowtime + "-" + nowustime + "----------------------------------------------------------------")
         ri = ri + 1
 
 if __name__ == '__main__': main()
