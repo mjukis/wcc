@@ -165,7 +165,11 @@ def hoursbyday(screen,when):
           openp = str(int(open) - 2400).zfill(4)
         else:
           openp = str(open).zfill(4)
-        tstr = openp[:2] + ":" + openp[2:] + " tomorrow"
+        eventwhen = datetime.datetime(2016,9,int(day),int(openp[:2]),int(openp[2:]))
+        prettywhen = eventwhen.strftime("%I:%M%p")
+        if prettywhen[0] == "0":
+          prettywhen = " " + prettywhen.lstrip("0")
+        tstr = prettywhen + " tomorrow"
       pad = (28 - len(place)) * " "
       placestr = pad + place
       print_rad(screen, ri, placestr + " is CLOSED until " + tstr)
@@ -195,7 +199,11 @@ def hoursbyday(screen,when):
           closestr = str(closetime) + " more minute" + plural
         pad = (28 - len(place)) * " "
         placestr = pad + place
-        print_rad(screen, ri, placestr + " is OPEN   until " + closep[:2] + ":" + closep[2:] + " (" + closestr + ")")
+        eventwhen = datetime.datetime(2016,9,int(day),int(closep[:2]),int(closep[2:]))
+        prettywhen = eventwhen.strftime("%I:%M%p")
+        if prettywhen[0] == "0":
+          prettywhen = " " + prettywhen.lstrip("0")
+        print_rad(screen, ri, placestr + " is OPEN   until " + prettywhen + " (" + closestr + ")")
       else:  
         pad = (28 - len(place)) * " "
         placestr = pad + place
@@ -226,7 +234,11 @@ def hoursbyday(screen,when):
  
       pad = (28 - len(place)) * " "
       placestr = pad + place
-      print_rad(screen, ri, placestr + " is CLOSED until " + openp[:2] + ":" + openp[2:] + " (in " + openstr + ")")
+      eventwhen = datetime.datetime(2016,9,int(day),int(openp[:2]),int(openp[2:]))
+      prettywhen = eventwhen.strftime("%I:%M%p")
+      if prettywhen[0] == "0":
+        prettywhen = " " + prettywhen.lstrip("0")
+      print_rad(screen, ri, placestr + " is CLOSED until " + prettywhen + " (in " + openstr + ")")
       ri = ri + 1
       nrow = ncur.fetchone()
     ri = ri + 1
